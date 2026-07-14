@@ -1,6 +1,6 @@
 # TermiCam
 
-Terminal based ASCII video feed
+A real-time ASCII camera for your terminal.
 
 ## Acknowledgments
 

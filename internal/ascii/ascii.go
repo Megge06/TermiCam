@@ -1,46 +1,16 @@
-package main
+package ascii
 
 import (
 	"bytes"
 	"fmt"
 	"image"
-	_ "image/jpeg"
-	_ "image/png"
-	"os"
 )
 
 // Palette presets
 const (
-	paletteSimple   = " .:-=+*#%@"
-	paletteDetailed = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+	PaletteSimple   = " .:-=+*#%@"
+	PaletteDetailed = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
 )
-
-func main() {
-	//Open file
-	file, err := os.Open("test.jpeg")
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		return
-	}
-	defer file.Close()
-
-	//Decode file
-	img, _, err := image.Decode(file)
-	if err != nil {
-		fmt.Printf("Error decoding image: %v\n", err)
-		return
-	}
-
-	// Convert image to ASCII with color enabled
-	asciiArt, err := ConvertImageToASCII(img, 80, true, paletteSimple)
-	if err != nil {
-		fmt.Printf("Conversion error: %v\n", err)
-		return
-	}
-
-	// Output the result
-	fmt.Print(asciiArt)
-}
 
 // ConvertImageToASCII handles the core pixel-binning and character translation
 func ConvertImageToASCII(img image.Image, targetWidth int, useColor bool, palette string) (string, error) {
@@ -54,7 +24,7 @@ func ConvertImageToASCII(img image.Image, targetWidth int, useColor bool, palett
 	}
 
 	rawHeight := targetWidth * imgHeight / imgWidth
-	targetHeight := int(float64(rawHeight) * 0.48)
+	targetHeight := int(float64(rawHeight) * 0.45)
 
 	if targetHeight == 0 {
 		targetHeight = 1
