@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/Megge06/TermiCam/internal/ascii"
 )
 
 // Render the view
@@ -74,12 +76,30 @@ func (m Model) viewSelect() tea.View {
 func (m Model) viewCamera() tea.View {
 	s := titleStyle.Render("--- Camera Screen ---") + "\n\n"
 
-	// Print configured devices
-	s += choiceStyle.Render("Active Feeds:") + "\n"
-	for idx := range m.selected {
-		s += fmt.Sprintf("  %s %s\n", cursorStyle.Render("•"), choiceStyle.Render(m.choices[idx]))
+	// Load the image from the path
+	img, err := loadImage("internal/ascii/test.png")
+	if err != nil {
+		s += errStyle.Render(fmt.Sprintf("Error loading image file: %v", err))
+		v := tea.NewView(s)
+		v.AltScreen = true
+		return v
 	}
 
+	targetWidth := m.termWidth - 4
+
+	if targetWidth <= 0 {
+		targetWidth = 80
+	}
+
+	// Pass the loaded image object into the ASCII converter
+	asciiArt, err := ascii.ConvertImageToASCII(img, targetWidth, true, ascii.PaletteSimple)
+	if err != nil {
+		s += errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
+	}
+
+	centeredAscii := lipgloss.PlaceHorizontal(m.termWidth, lipgloss.Center, asciiArt)
+
+	s += centeredAscii
 	s += "\n" + mutedStyle.Render("Press ESC to go back, or q to quit.") + "\n"
 
 	v := tea.NewView(s)

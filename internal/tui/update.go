@@ -12,6 +12,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// Handle window size changes
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.termWidth = msg.Width
+		m.termHeight = msg.Height
+	}
+
 	switch m.screen {
 	case screenSelect:
 		return m.updateSelect(msg)

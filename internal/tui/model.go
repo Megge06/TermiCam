@@ -15,12 +15,14 @@ const (
 )
 
 type Model struct {
-	choices  []string
-	cursor   int
-	selected map[int]struct{}
-	loading  bool
-	err      error
-	screen   screenState
+	choices    []string
+	cursor     int
+	selected   map[int]struct{}
+	loading    bool
+	err        error
+	screen     screenState
+	termWidth  int
+	termHeight int
 }
 
 type devicesLoadedMsg []string
