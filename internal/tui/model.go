@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/Megge06/TermiCam/internal/video"
 )
 
 type screenState int
@@ -15,15 +16,17 @@ const (
 )
 
 type Model struct {
-	choices    []string
-	cursor     int
-	selected   map[int]struct{}
-	loading    bool
-	hideUI     bool
-	err        error
-	screen     screenState
-	termWidth  int
-	termHeight int
+	choices      []string
+	cursor       int
+	selected     map[int]struct{}
+	loading      bool
+	hideUI       bool
+	err          error
+	screen       screenState
+	termWidth    int
+	termHeight   int
+	videoSession *video.Session
+	frameBuffer  []byte
 }
 
 type devicesLoadedMsg []string
