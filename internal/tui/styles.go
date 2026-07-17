@@ -25,6 +25,23 @@ var (
 	errStyle   = lipgloss.NewStyle().Foreground(errorRed).Bold(true)
 
 	logoStyle = lipgloss.NewStyle().Foreground(magenta).Bold(true)
+
+	activeToggleStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#1a1a1a")).
+				Background(cyan).
+				Padding(0, 1).
+				Bold(true)
+
+	inactiveToggleStyle = lipgloss.NewStyle().
+				Foreground(gray).
+				Background(darkMagenta).
+				Padding(0, 1)
+
+	badgeStyle = lipgloss.NewStyle().
+			Foreground(cyan).
+			Background(darkMagenta).
+			Padding(0, 1).
+			Bold(true)
 )
 
 // ASCII art wordmark, shown atop the settings and device-selection screens

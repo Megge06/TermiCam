@@ -41,13 +41,15 @@ func (m Model) viewSettings() tea.View {
 	}
 
 	settings := []struct {
-		label string
-		value string
+		label     string
+		isToggle  bool
+		toggleVal bool
+		value     string
 	}{
-		{"Color Mode", fmt.Sprintf("%t", m.color)},
-		{"Detailed Palette", fmt.Sprintf("%t", m.detailed)},
-		{"Target FPS", fpsVal},
-		{"Proceed to Device Selection", ""},
+		{"Color Mode", true, m.color, ""},
+		{"Detailed Palette", true, m.detailed, ""},
+		{"Target FPS", false, false, fpsVal},
+		{"Proceed to Device Selection", false, false, ""},
 	}
 
 	for i, item := range settings {
@@ -63,7 +65,9 @@ func (m Model) viewSettings() tea.View {
 			labelStr = choiceStyle.Render(item.label)
 		}
 
-		if item.value != "" {
+		if item.isToggle {
+			s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, renderToggle(item.toggleVal))
+		} else if item.value != "" {
 			s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, checkedStyle.Render(item.value))
 		} else {
 			s += fmt.Sprintf("%s %s\n", cursor, labelStr)
@@ -127,7 +131,7 @@ func (m Model) viewCamera() tea.View {
 	// Calculate the maximum height for the ASCII art based on the terminal height
 	var reservedHeight int
 	if !m.hideUI {
-		reservedHeight = 7
+		reservedHeight = 9
 	} else {
 		reservedHeight = 0
 	}
@@ -159,9 +163,33 @@ func (m Model) viewCamera() tea.View {
 		s += errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
 
-	// Render Header
+	// Render Header and Meta Badges
 	if !m.hideUI {
-		s = lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, titleStyle.Render("--- Camera Screen ---")) + "\n\n"
+		headerText := titleStyle.Render("--- Camera Screen ---")
+
+		// Visual status badges indicating session information
+		fpsBadge := badgeStyle.Render(fmt.Sprintf(" %d FPS ", m.fps))
+
+		var colorMode string
+		if m.color {
+			colorMode = " COLOR "
+		} else {
+			colorMode = " B&W "
+		}
+		colorBadge := badgeStyle.Render(colorMode)
+
+		var detailMode string
+		if m.detailed {
+			detailMode = " DETAILED "
+		} else {
+			detailMode = " SIMPLE "
+		}
+		detailBadge := badgeStyle.Render(detailMode)
+
+		badges := lipgloss.JoinHorizontal(lipgloss.Center, fpsBadge, " ", colorBadge, " ", detailBadge)
+
+		s = lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, headerText) + "\n"
+		s += lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, badges) + "\n\n"
 	}
 
 	// Centered ASCII Art
@@ -177,4 +205,13 @@ func (m Model) viewCamera() tea.View {
 	v := tea.NewView(s)
 	v.AltScreen = true
 	return v
+}
+
+// renderToggle draws the active/inactive visual toggle pill representation
+func renderToggle(enabled bool) string {
+	if enabled {
+		return activeToggleStyle.Render(" ON ") + inactiveToggleStyle.Render(" OFF ")
+	}
+	activeMuted := activeToggleStyle.Background(gray).Foreground(fg)
+	return inactiveToggleStyle.Render(" ON ") + activeMuted.Render(" OFF ")
 }

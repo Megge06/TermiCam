@@ -102,7 +102,7 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < 3 {
 				m.cursor++
 			}
-		case "space":
+		case "space", "left", "right":
 			switch m.cursor {
 			case 0:
 				m.color = !m.color

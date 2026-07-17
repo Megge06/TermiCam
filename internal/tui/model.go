@@ -79,7 +79,7 @@ func (p placeholderItem) Description() string {
 }
 
 func (p placeholderItem) FilterValue() string {
-	return ""
+	return "No other devices detected"
 }
 
 func (m *Model) updateListItems() {
