@@ -32,7 +32,13 @@ func (m Model) View() tea.View {
 }
 
 func (m Model) viewSettings() tea.View {
-	s := titleStyle.Render("--- Settings ---") + "\n\n"
+	s := logoStyle.Render(logo) + "\n\n"
+	s += titleStyle.Render("--- Settings ---") + "\n\n"
+
+	fpsVal := fmt.Sprintf("%d", m.fps)
+	if m.inputActive {
+		fpsVal = m.textInput.View()
+	}
 
 	settings := []struct {
 		label string
@@ -40,7 +46,7 @@ func (m Model) viewSettings() tea.View {
 	}{
 		{"Color Mode", fmt.Sprintf("%t", m.color)},
 		{"Detailed Palette", fmt.Sprintf("%t", m.detailed)},
-		{"Target FPS", fmt.Sprintf("%d", m.fps)},
+		{"Target FPS", fpsVal},
 		{"Proceed to Device Selection", ""},
 	}
 
@@ -64,7 +70,11 @@ func (m Model) viewSettings() tea.View {
 		}
 	}
 
-	s += "\n" + mutedStyle.Render("[Space] Toggle/Cycle  [Enter] Proceed  [q] Quit")
+	if m.inputActive {
+		s += mutedStyle.Render("[Enter] Confirm FPS  [ESC] Cancel Editing")
+	} else {
+		s += mutedStyle.Render("[Space] Edit [Enter] Proceed  [q] Quit")
+	}
 
 	v := tea.NewView(s)
 	v.AltScreen = true
@@ -73,19 +83,22 @@ func (m Model) viewSettings() tea.View {
 
 func (m Model) viewSelect() tea.View {
 	if m.loading {
-		v := tea.NewView(subtitleStyle.Render("Scanning system for video devices..."))
+		s := logoStyle.Render(logo) + "\n\n" + subtitleStyle.Render("Scanning system for video devices...")
+		v := tea.NewView(s)
 		return v
 	}
 
 	if len(m.choices) == 0 {
-		s := errStyle.Render("No compatible video devices found.") + "\n\n" + mutedStyle.Render("Press q to exit.")
+		s := logoStyle.Render(logo) + "\n\n"
+		s += errStyle.Render("No compatible video devices found.") + "\n\n" + mutedStyle.Render("Press q to exit.")
 		v := tea.NewView(s)
 		v.AltScreen = true
 		return v
 	}
 
 	// Format Title Header
-	s := titleStyle.Render("Select video devices to configure") + " " + subtitleStyle.Render("(Space to check, Enter to proceed):") + "\n\n"
+	s := logoStyle.Render(logo) + "\n\n"
+	s += titleStyle.Render("Select video devices to configure") + " " + subtitleStyle.Render("(Space to check, Enter to proceed):") + "\n\n"
 
 	for i, choice := range m.choices {
 		cursor := " "

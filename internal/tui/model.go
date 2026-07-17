@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/Megge06/TermiCam/internal/video"
 )
@@ -34,6 +35,8 @@ type Model struct {
 	color        bool
 	detailed     bool
 	fps          int
+	textInput    textinput.Model
+	inputActive  bool
 }
 
 // Frame capture message types
@@ -45,13 +48,21 @@ type errMsg struct{ err error }
 
 // Empty initial model, filled with data upon command completion
 func InitialModel() Model {
+	ti := textinput.New()
+	ti.Placeholder = "30"
+	ti.SetValue("30")
+	ti.CharLimit = 3
+	ti.SetWidth(5)
+
 	return Model{
-		selected: -1,
-		loading:  true,
-		hideUI:   false,
-		color:    false,
-		detailed: false,
-		fps:      30,
+		selected:    -1,
+		loading:     true,
+		hideUI:      false,
+		color:       false,
+		detailed:    false,
+		fps:         30,
+		textInput:   ti,
+		inputActive: false,
 	}
 }
 

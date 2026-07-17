@@ -23,4 +23,9 @@ var (
 
 	mutedStyle = lipgloss.NewStyle().Foreground(gray)
 	errStyle   = lipgloss.NewStyle().Foreground(errorRed).Bold(true)
+
+	logoStyle = lipgloss.NewStyle().Foreground(magenta).Bold(true)
 )
+
+// ASCII art wordmark, shown atop the settings and device-selection screens
+const logo = "  ______                    _ ______\n /_  __/__  _________ ___  (_) ____/___ _____ ___\n  / / / _ \\/ ___/ __ `__ \\/ / /   / __ `/ __ `__ \\\n / / /  __/ /  / / / / / / / /___/ /_/ / / / / / /\n/_/  \\___/_/  /_/ /_/ /_/_/\\____/\\__,_/_/ /_/ /_/"

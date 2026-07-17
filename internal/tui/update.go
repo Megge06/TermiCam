@@ -5,7 +5,9 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/Megge06/TermiCam/internal/video"
 )
@@ -49,6 +51,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.inputActive {
+		var cmd tea.Cmd
+		m.textInput, cmd = m.textInput.Update(msg)
+
+		if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
+			switch keyMsg.String() {
+			case "enter":
+				// Confirm the change
+				val := strings.TrimSpace(m.textInput.Value())
+				if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
+					m.fps = parsed
+				} else {
+					// Fallback if the entered value is invalid
+					m.textInput.SetValue(strconv.Itoa(m.fps))
+				}
+				m.textInput.Blur()
+				m.inputActive = false
+			case "esc":
+				// Revert changes and exit edit mode
+				m.textInput.SetValue(strconv.Itoa(m.fps))
+				m.textInput.Blur()
+				m.inputActive = false
+			}
+		}
+		return m, cmd
+	}
+
 	switch msg := msg.(type) {
 	// Handle keyboard inputs
 	case tea.KeyPressMsg:
@@ -69,15 +98,11 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case 1:
 				m.detailed = !m.detailed
 			case 2:
-				// Cycle through common FPS targets
-				switch m.fps {
-				case 15:
-					m.fps = 30
-				case 30:
-					m.fps = 60
-				default:
-					m.fps = 15
-				}
+				// Activate input on Space
+				m.inputActive = true
+				m.textInput.Focus()
+				m.textInput.SetValue(strconv.Itoa(m.fps))
+				return m, textinput.Blink
 			case 3:
 				m.screen = screenSelect
 				m.cursor = 0
@@ -88,6 +113,7 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = screenSelect
 			m.cursor = 0
 			return m, nil
+
 		}
 	}
 	return m, nil
