@@ -1,13 +1,22 @@
 package tui
 
 import (
+	"fmt"
+	"os/exec"
+	"regexp"
+	"strconv"
+
 	tea "charm.land/bubbletea/v2"
+	"github.com/Megge06/TermiCam/internal/video"
 )
 
 // Define how the model updates
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
 		if keyMsg.String() == "ctrl+c" || keyMsg.String() == "q" {
+			if m.videoSession != nil {
+				_ = m.videoSession.Close()
+			}
 			return m, tea.Quit
 		}
 	}
@@ -40,7 +49,7 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		m.loading = false
-		m.err = msg
+		m.err = msg.err
 		return m, nil
 
 	// Handle keyboard inputs
@@ -66,7 +75,47 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			if len(m.selected) > 0 {
-				m.screen = screenCamera
+				var device string
+				for idx := range m.selected {
+					device = m.choices[idx]
+					break
+				}
+
+				if device != "" {
+					// Query native camera resolution
+					nativeW, nativeH, err := getDeviceResolution(device)
+					if err != nil || nativeW == 0 || nativeH == 0 {
+						nativeW, nativeH = 640, 480 // Fallback
+					}
+
+					// Calculate aspect ratio
+					aspectRatio := float64(nativeW) / float64(nativeH)
+
+					// Cap maximum width to 640px to keep CPU load low
+					maxWidth := 640
+					if nativeW < maxWidth {
+						maxWidth = nativeW
+					}
+
+					// Scale height proportionally to maintain exact aspect ratio
+					m.videoWidth = maxWidth
+					m.videoHeight = int(float64(maxWidth) / aspectRatio)
+
+					fps := 30
+
+					session, err := video.NewSession(device, m.videoWidth, m.videoHeight, fps)
+					if err != nil {
+						m.err = err
+						return m, nil
+					}
+
+					m.videoSession = session
+					m.frameBuffer = make([]byte, m.videoWidth*m.videoHeight*3)
+					m.backBuffer = make([]byte, m.videoWidth*m.videoHeight*3)
+					m.screen = screenCamera
+
+					return m, readFrameCmd(m.videoSession, m.backBuffer)
+				}
 			}
 		}
 	}
@@ -76,13 +125,66 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 // Update camera screen
 func (m Model) updateCamera(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case frameMsg:
+		m.frameBuffer, m.backBuffer = m.backBuffer, m.frameBuffer
+		// Fetch the next frame into the back buffer
+		return m, readFrameCmd(m.videoSession, m.backBuffer)
+
+	case frameErrMsg:
+		m.err = msg.err
+		if m.videoSession != nil {
+			_ = m.videoSession.Close()
+			m.videoSession = nil
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc", "backspace":
+			if m.videoSession != nil {
+				_ = m.videoSession.Close()
+				m.videoSession = nil
+			}
 			m.screen = screenSelect
 		case "h":
 			m.hideUI = !m.hideUI
 		}
 	}
 	return m, nil
+
+}
+
+// Read a frame from the video session and update the buffers
+func readFrameCmd(s *video.Session, buf []byte) tea.Cmd {
+	return func() tea.Msg {
+		err := s.ReadFrame(buf)
+		if err != nil {
+			return frameErrMsg{err}
+		}
+		return frameMsg{}
+	}
+}
+
+// Query device resolution to preserve aspect ratio
+func getDeviceResolution(device string) (int, int, error) {
+	out, err := exec.Command("v4l2-ctl", "-d", device, "--get-fmt-video").CombinedOutput()
+	if err != nil {
+		out, err = exec.Command("v4l2-ctl", "-d", device, "--get-fmt-video-out").CombinedOutput()
+		if err != nil {
+			return 640, 480, err
+		}
+	}
+
+	// Look for pattern: Width/Height : 1280/720
+	re := regexp.MustCompile(`Width/Height\s*:\s*(\d+)/(\d+)`)
+	matches := re.FindStringSubmatch(string(out))
+
+	if len(matches) < 3 {
+		return 640, 480, fmt.Errorf("could not parse resolution from output")
+	}
+
+	w, _ := strconv.Atoi(matches[1])
+	h, _ := strconv.Atoi(matches[2])
+
+	return w, h, nil
 }

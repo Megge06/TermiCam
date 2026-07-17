@@ -27,10 +27,17 @@ type Model struct {
 	termHeight   int
 	videoSession *video.Session
 	frameBuffer  []byte
+	backBuffer   []byte
+	videoWidth   int
+	videoHeight  int
 }
 
+// Frame capture message types
+type frameMsg struct{}
+type frameErrMsg struct{ err error } // Changed to struct
+
 type devicesLoadedMsg []string
-type errMsg error
+type errMsg struct{ err error }
 
 // Empty initial model, filled with data upon command completion
 func InitialModel() Model {
@@ -49,7 +56,7 @@ func (m Model) Init() tea.Cmd {
 func getDevicesCmd() tea.Msg {
 	out, err := exec.Command("v4l2-ctl", "--list-devices").Output()
 	if err != nil {
-		return errMsg(err)
+		return errMsg{err}
 	}
 
 	// Parse output to get device names

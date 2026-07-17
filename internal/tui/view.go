@@ -75,23 +75,17 @@ func (m Model) viewSelect() tea.View {
 
 func (m Model) viewCamera() tea.View {
 	var s string
-	if !m.hideUI {
-		s = titleStyle.Render("--- Camera Screen ---") + "\n\n"
-	}
 
-	// Load the image from the path
-	img, err := loadImage("internal/ascii/test.png")
-	if err != nil {
-		s += errStyle.Render(fmt.Sprintf("Error loading image file: %v", err))
+	if m.videoSession == nil || len(m.frameBuffer) == 0 {
+		s += errStyle.Render("Camera session is not initialized.")
 		v := tea.NewView(s)
 		v.AltScreen = true
 		return v
 	}
 
 	// Get the dimensions of the image
-	bounds := img.Bounds()
-	imgWidth := bounds.Dx()
-	imgHeight := bounds.Dy()
+	imgWidth := m.videoWidth
+	imgHeight := m.videoHeight
 
 	targetWidth := m.termWidth - 4
 	if targetWidth <= 0 {
@@ -101,7 +95,7 @@ func (m Model) viewCamera() tea.View {
 	// Calculate the maximum height for the ASCII art based on the terminal height
 	var reservedHeight int
 	if !m.hideUI {
-		reservedHeight = 6
+		reservedHeight = 7
 	} else {
 		reservedHeight = 0
 	}
@@ -111,7 +105,7 @@ func (m Model) viewCamera() tea.View {
 	}
 
 	if imgWidth > 0 && imgHeight > 0 {
-		// Calculate the maximum width that will keep the height within our maxHeight limit
+		// Calculate the maximum width that will keep the height within the maxHeight limit
 		aspectRatio := float64(imgWidth) / float64(imgHeight)
 		vFitWidth := int(float64(maxHeight) * aspectRatio / 0.45)
 
@@ -120,29 +114,32 @@ func (m Model) viewCamera() tea.View {
 			targetWidth = vFitWidth
 		}
 
-		if targetWidth >= imgWidth {
-			targetWidth = imgWidth - 1
-		}
-		if targetWidth >= imgHeight {
-			targetWidth = imgHeight - 1
+		if targetWidth > imgWidth {
+			targetWidth = imgWidth
 		}
 		if targetWidth <= 0 {
 			targetWidth = 1
 		}
 	}
-
-	// Pass the loaded image object into the ASCII converter
-	asciiArt, err := ascii.ConvertImageToASCII(img, targetWidth, true, ascii.PaletteSimple)
+	// Pass the loaded frame into the raw RGB24 converter
+	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, true, ascii.PaletteSimple)
 	if err != nil {
 		s += errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
 
-	centeredAscii := lipgloss.PlaceHorizontal(m.termWidth, lipgloss.Center, asciiArt)
-
-	s += centeredAscii
+	// Render Header
 	if !m.hideUI {
-		s += "\n" + mutedStyle.Render("Press h to hide UI.") + "\n"
-		s += "\n" + mutedStyle.Render("Press ESC to go back, or q to quit.") + "\n"
+		s = lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, titleStyle.Render("--- Camera Screen ---")) + "\n\n"
+	}
+
+	// Centered ASCII Art
+	centeredAscii := lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, asciiArt)
+	s += centeredAscii
+
+	// Render Footer
+	if !m.hideUI {
+		s += "\n\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("Press h to hide UI."))
+		s += "\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("Press ESC to go back, or q to quit."))
 	}
 
 	v := tea.NewView(s)
