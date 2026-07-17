@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"charm.land/bubbles/v2/list" // <-- NEW IMPORT
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/Megge06/TermiCam/internal/video"
@@ -25,6 +26,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.termWidth = msg.Width
 		m.termHeight = msg.Height
+
+		// Reserve some height for the logo block
+		h := msg.Height - 8
+		if h < 0 {
+			h = 0
+		}
+		m.deviceList.SetSize(msg.Width, h) //
+
 	case devicesLoadedMsg:
 		m.loading = false
 		m.devices = []video.Device(msg)
@@ -32,6 +41,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for i, device := range m.devices {
 			m.choices[i] = device.String()
 		}
+		m.updateListItems()
 		return m, nil
 	case errMsg:
 		m.loading = false
@@ -122,6 +132,9 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // Update select screen
 func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.deviceList, cmd = m.deviceList.Update(msg)
+
 	switch msg := msg.(type) {
 
 	// Handle keyboard inputs
@@ -130,20 +143,32 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Prevent custom actions if the user is typing query filters inside the list searchbox
+		if m.deviceList.FilterState() == list.Filtering {
+			return m, cmd
+		}
+
 		switch msg.String() {
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
 		case "space":
-			if m.selected == m.cursor {
-				m.selected = -1
-			} else {
-				m.selected = m.cursor
+			selectedItem := m.deviceList.SelectedItem()
+			if selectedItem != nil {
+				if devItem, ok := selectedItem.(deviceItem); ok {
+					targetIdx := -1
+					for i, d := range m.devices {
+						if d.ID == devItem.device.ID {
+							targetIdx = i
+							break
+						}
+					}
+					if targetIdx != -1 {
+						if m.selected == targetIdx {
+							m.selected = -1
+						} else {
+							m.selected = targetIdx
+						}
+						m.updateListItems()
+					}
+				}
 			}
 		case "esc", "backspace":
 			m.screen = screenSettings
@@ -151,8 +176,20 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			idx := m.selected
+
+			// If no device was explicitly checked with Space, fall back to the currently focused device item
 			if idx == -1 {
-				idx = m.cursor
+				selectedItem := m.deviceList.SelectedItem()
+				if selectedItem != nil {
+					if devItem, ok := selectedItem.(deviceItem); ok {
+						for i, d := range m.devices {
+							if d.ID == devItem.device.ID {
+								idx = i
+								break
+							}
+						}
+					}
+				}
 			}
 
 			if idx >= 0 && idx < len(m.devices) {
@@ -195,7 +232,7 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	return m, nil
+	return m, cmd
 }
 
 // Update camera screen

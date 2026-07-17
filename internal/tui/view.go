@@ -88,7 +88,7 @@ func (m Model) viewSelect() tea.View {
 		return v
 	}
 
-	if len(m.choices) == 0 {
+	if len(m.devices) == 0 {
 		s := logoStyle.Render(logo) + "\n\n"
 		s += errStyle.Render("No compatible video devices found.") + "\n\n" + mutedStyle.Render("Press q to exit.")
 		v := tea.NewView(s)
@@ -96,29 +96,9 @@ func (m Model) viewSelect() tea.View {
 		return v
 	}
 
-	// Format Title Header
+	// Render the Logo Header followed by the interactive search list
 	s := logoStyle.Render(logo) + "\n\n"
-	s += titleStyle.Render("Select video devices to configure") + " " + subtitleStyle.Render("(Space to check, Enter to proceed):") + "\n\n"
-
-	for i, choice := range m.choices {
-		cursor := " "
-		if m.cursor == i {
-			cursor = cursorStyle.Render(">")
-		}
-
-		checked := " "
-		if m.selected == i {
-			checked = checkedStyle.Render("x")
-		}
-
-		renderedChoice := choiceStyle.Render(choice)
-		if m.cursor == i {
-			renderedChoice = currentChoiceStyle.Render(choice)
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, renderedChoice)
-	}
-	s += "\n" + mutedStyle.Render("[Space] Toggle/Cycle  [Enter] Proceed  [ESC] Go Back [q] Quit") + "\n"
+	s += m.deviceList.View()
 
 	v := tea.NewView(s)
 	v.AltScreen = true
