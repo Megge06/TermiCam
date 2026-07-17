@@ -1,9 +1,6 @@
 package tui
 
 import (
-	"fmt"
-	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -30,7 +27,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.termHeight = msg.Height
 	case devicesLoadedMsg:
 		m.loading = false
-		m.choices = msg
+		m.devices = []video.Device(msg)
+		m.choices = make([]string, len(m.devices))
+		for i, device := range m.devices {
+			m.choices[i] = device.String()
+		}
 		return m, nil
 	case errMsg:
 		m.loading = false
@@ -154,12 +155,12 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 				idx = m.cursor
 			}
 
-			if idx >= 0 && idx < len(m.choices) {
-				device := m.choices[idx]
+			if idx >= 0 && idx < len(m.devices) {
+				device := m.devices[idx]
 
-				if device != "" {
+				if device.ID != "" {
 					// Query native camera resolution
-					nativeW, nativeH, err := getDeviceResolution(device)
+					nativeW, nativeH, err := video.GetDeviceResolution(device)
 					if err != nil || nativeW == 0 || nativeH == 0 {
 						nativeW, nativeH = 640, 480 // Fallback
 					}
@@ -238,28 +239,4 @@ func readFrameCmd(s *video.Session, buf []byte) tea.Cmd {
 		}
 		return frameMsg{}
 	}
-}
-
-// Query device resolution to preserve aspect ratio
-func getDeviceResolution(device string) (int, int, error) {
-	out, err := exec.Command("v4l2-ctl", "-d", device, "--get-fmt-video").CombinedOutput()
-	if err != nil {
-		out, err = exec.Command("v4l2-ctl", "-d", device, "--get-fmt-video-out").CombinedOutput()
-		if err != nil {
-			return 640, 480, err
-		}
-	}
-
-	// Look for pattern: Width/Height : 1280/720
-	re := regexp.MustCompile(`Width/Height\s*:\s*(\d+)/(\d+)`)
-	matches := re.FindStringSubmatch(string(out))
-
-	if len(matches) < 3 {
-		return 640, 480, fmt.Errorf("could not parse resolution from output")
-	}
-
-	w, _ := strconv.Atoi(matches[1])
-	h, _ := strconv.Atoi(matches[2])
-
-	return w, h, nil
 }

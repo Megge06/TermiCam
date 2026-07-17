@@ -11,7 +11,7 @@ import (
 // Render the view
 func (m Model) View() tea.View {
 	if m.err != nil {
-		s := errStyle.Render(fmt.Sprintf("Error running v4l2-ctl: %v", m.err)) + "\n\n" + mutedStyle.Render("Press q to exit.")
+		s := errStyle.Render(fmt.Sprintf("Error: %v", m.err)) + "\n\n" + mutedStyle.Render("Press q to exit.")
 		v := tea.NewView(s)
 		v.AltScreen = true
 		return v

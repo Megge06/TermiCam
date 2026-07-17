@@ -2,6 +2,13 @@
 
 A real-time ASCII camera for your terminal.
 
+## Requirements
+
+- **Go 1.26.5+** to build the app.
+- **FFmpeg** for camera capture.
+- **Linux:** `v4l2-ctl` from `v4l-utils`.
+- **macOS:** install FFmpeg with `brew install ffmpeg` and grant camera permission to the terminal app you use to run TermiCam.
+
 ## Built With
 
 - **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** - A powerful little TUI framework, used to power TermiCam's interface.

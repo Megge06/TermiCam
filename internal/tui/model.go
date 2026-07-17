@@ -1,9 +1,6 @@
 package tui
 
 import (
-	"os/exec"
-	"strings"
-
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/Megge06/TermiCam/internal/video"
@@ -19,6 +16,7 @@ const (
 
 type Model struct {
 	choices      []string
+	devices      []video.Device
 	cursor       int
 	selected     int
 	loading      bool
@@ -43,7 +41,7 @@ type Model struct {
 type frameMsg struct{}
 type frameErrMsg struct{ err error }
 
-type devicesLoadedMsg []string
+type devicesLoadedMsg []video.Device
 type errMsg struct{ err error }
 
 // Empty initial model, filled with data upon command completion
@@ -70,26 +68,10 @@ func (m Model) Init() tea.Cmd {
 	return getDevicesCmd
 }
 
-// For linux, run the v4l2-ctl command to get a list of video devices
 func getDevicesCmd() tea.Msg {
-	out, err := exec.Command("v4l2-ctl", "--list-devices").Output()
+	devices, err := video.ListDevices()
 	if err != nil {
 		return errMsg{err}
-	}
-
-	// Parse output to get device names
-	lines := strings.Split(string(out), "\n")
-	var devices []string
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
-		}
-
-		if strings.HasPrefix(trimmed, "/dev/video") {
-			devices = append(devices, trimmed)
-		}
 	}
 
 	return devicesLoadedMsg(devices)

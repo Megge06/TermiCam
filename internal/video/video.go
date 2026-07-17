@@ -7,6 +7,20 @@ import (
 	"os/exec"
 )
 
+// Device identifies a camera as exposed by the host platform.
+type Device struct {
+	ID   string
+	Name string
+}
+
+func (d Device) String() string {
+	if d.Name == "" || d.Name == d.ID {
+		return d.ID
+	}
+
+	return fmt.Sprintf("%s (%s)", d.Name, d.ID)
+}
+
 // Session manages the lifecycle of the background FFmpeg capture process.
 type Session struct {
 	cmd    *exec.Cmd
@@ -16,20 +30,8 @@ type Session struct {
 	height int
 }
 
-func NewSession(device string, width, height, fps int) (*Session, error) {
+func newSession(width, height int, args []string) (*Session, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-
-	// FFmpeg command
-	args := []string{
-		"-nostdin",
-		"-f", "v4l2",
-		"-i", device,
-		"-vf", fmt.Sprintf("scale=%d:%d", width, height),
-		"-r", fmt.Sprintf("%d", fps),
-		"-f", "rawvideo",
-		"-pix_fmt", "rgb24",
-		"-",
-	}
 
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
 
