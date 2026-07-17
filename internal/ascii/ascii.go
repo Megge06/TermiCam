@@ -12,7 +12,7 @@ const (
 )
 
 // ConvertRGB24ToASCII handles the conversion of an RGB24 image to ASCII art
-func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, palette string) (string, error) {
+func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, detailed bool) (string, error) {
 	if imgWidth <= 0 || imgHeight <= 0 || targetWidth <= 0 {
 		return "", fmt.Errorf("invalid dimensions: imgWidth=%d, imgHeight=%d, targetWidth=%d", imgWidth, imgHeight, targetWidth)
 	}
@@ -55,6 +55,10 @@ func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useCo
 			luminance := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
 
 			// Map the 8-bit luminance (0-255) to our palette index
+			palette := PaletteSimple
+			if detailed {
+				palette = PaletteDetailed
+			}
 			paletteIndex := int((luminance / 255.0) * float64(len(palette)-1))
 			char := palette[paletteIndex]
 

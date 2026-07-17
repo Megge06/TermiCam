@@ -18,6 +18,8 @@ func (m Model) View() tea.View {
 	}
 
 	switch m.screen {
+	case screenSettings:
+		return m.viewSettings()
 	case screenSelect:
 		return m.viewSelect()
 	case screenCamera:
@@ -29,10 +31,49 @@ func (m Model) View() tea.View {
 	}
 }
 
+func (m Model) viewSettings() tea.View {
+	s := titleStyle.Render("--- Settings ---") + "\n\n"
+
+	settings := []struct {
+		label string
+		value string
+	}{
+		{"Color Mode", fmt.Sprintf("%t", m.color)},
+		{"Detailed Palette", fmt.Sprintf("%t", m.detailed)},
+		{"Target FPS", fmt.Sprintf("%d", m.fps)},
+		{"Proceed to Device Selection", ""},
+	}
+
+	for i, item := range settings {
+		cursor := " "
+		if m.cursor == i {
+			cursor = cursorStyle.Render(">")
+		}
+
+		labelStr := item.label
+		if m.cursor == i {
+			labelStr = currentChoiceStyle.Render(item.label)
+		} else {
+			labelStr = choiceStyle.Render(item.label)
+		}
+
+		if item.value != "" {
+			s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, checkedStyle.Render(item.value))
+		} else {
+			s += fmt.Sprintf("%s %s\n", cursor, labelStr)
+		}
+	}
+
+	s += "\n" + mutedStyle.Render("[Space] Toggle/Cycle  [Enter] Proceed  [q] Quit")
+
+	v := tea.NewView(s)
+	v.AltScreen = true
+	return v
+}
+
 func (m Model) viewSelect() tea.View {
 	if m.loading {
 		v := tea.NewView(subtitleStyle.Render("Scanning system for video devices..."))
-		v.AltScreen = true
 		return v
 	}
 
@@ -53,11 +94,10 @@ func (m Model) viewSelect() tea.View {
 		}
 
 		checked := " "
-		if _, ok := m.selected[i]; ok {
+		if m.selected == i {
 			checked = checkedStyle.Render("x")
 		}
 
-		// Apply distinct styling to the row currently under the cursor
 		renderedChoice := choiceStyle.Render(choice)
 		if m.cursor == i {
 			renderedChoice = currentChoiceStyle.Render(choice)
@@ -65,8 +105,7 @@ func (m Model) viewSelect() tea.View {
 
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, renderedChoice)
 	}
-
-	s += "\n" + mutedStyle.Render("Press q to quit.") + "\n"
+	s += "\n" + mutedStyle.Render("[Space] Toggle/Cycle  [Enter] Proceed  [ESC] Go Back [q] Quit") + "\n"
 
 	v := tea.NewView(s)
 	v.AltScreen = true
@@ -122,7 +161,7 @@ func (m Model) viewCamera() tea.View {
 		}
 	}
 	// Pass the loaded frame into the raw RGB24 converter
-	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, true, ascii.PaletteSimple)
+	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.detailed)
 	if err != nil {
 		s += errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
@@ -138,8 +177,8 @@ func (m Model) viewCamera() tea.View {
 
 	// Render Footer
 	if !m.hideUI {
-		s += "\n\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("Press h to hide UI."))
-		s += "\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("Press ESC to go back, or q to quit."))
+		s += "\n\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("[h] Hide UI"))
+		s += "\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("[Space] Toggle/Cycle  [Enter] Proceed  [ESC] Go Back [q] Quit"))
 	}
 
 	v := tea.NewView(s)

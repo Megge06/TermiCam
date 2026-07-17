@@ -11,14 +11,15 @@ import (
 type screenState int
 
 const (
-	screenSelect screenState = iota
+	screenSettings screenState = iota
+	screenSelect
 	screenCamera
 )
 
 type Model struct {
 	choices      []string
 	cursor       int
-	selected     map[int]struct{}
+	selected     int
 	loading      bool
 	hideUI       bool
 	err          error
@@ -30,11 +31,14 @@ type Model struct {
 	backBuffer   []byte
 	videoWidth   int
 	videoHeight  int
+	color        bool
+	detailed     bool
+	fps          int
 }
 
 // Frame capture message types
 type frameMsg struct{}
-type frameErrMsg struct{ err error } // Changed to struct
+type frameErrMsg struct{ err error }
 
 type devicesLoadedMsg []string
 type errMsg struct{ err error }
@@ -42,9 +46,12 @@ type errMsg struct{ err error }
 // Empty initial model, filled with data upon command completion
 func InitialModel() Model {
 	return Model{
-		selected: make(map[int]struct{}),
+		selected: -1,
 		loading:  true,
 		hideUI:   false,
+		color:    false,
+		detailed: false,
+		fps:      30,
 	}
 }
 

@@ -26,6 +26,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.termWidth = msg.Width
 		m.termHeight = msg.Height
+	case devicesLoadedMsg:
+		m.loading = false
+		m.choices = msg
+		return m, nil
+	case errMsg:
+		m.loading = false
+		m.err = msg.err
+		return m, nil
 	}
 
 	switch m.screen {
@@ -33,24 +41,61 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateSelect(msg)
 	case screenCamera:
 		return m.updateCamera(msg)
+	case screenSettings:
+		return m.updateSettings(msg)
 	}
 
+	return m, nil
+}
+
+func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	// Handle keyboard inputs
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			// There are 4 items (0: Color, 1: Detailed, 2: FPS, 3: Proceed)
+			if m.cursor < 3 {
+				m.cursor++
+			}
+		case "space":
+			switch m.cursor {
+			case 0:
+				m.color = !m.color
+			case 1:
+				m.detailed = !m.detailed
+			case 2:
+				// Cycle through common FPS targets
+				switch m.fps {
+				case 15:
+					m.fps = 30
+				case 30:
+					m.fps = 60
+				default:
+					m.fps = 15
+				}
+			case 3:
+				m.screen = screenSelect
+				m.cursor = 0
+				return m, nil
+			}
+
+		case "enter":
+			m.screen = screenSelect
+			m.cursor = 0
+			return m, nil
+		}
+	}
 	return m, nil
 }
 
 // Update select screen
 func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
-	case devicesLoadedMsg:
-		m.loading = false
-		m.choices = msg
-		return m, nil
-
-	case errMsg:
-		m.loading = false
-		m.err = msg.err
-		return m, nil
 
 	// Handle keyboard inputs
 	case tea.KeyPressMsg:
@@ -68,18 +113,23 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "space":
-			if _, ok := m.selected[m.cursor]; ok {
-				delete(m.selected, m.cursor)
+			if m.selected == m.cursor {
+				m.selected = -1
 			} else {
-				m.selected[m.cursor] = struct{}{}
+				m.selected = m.cursor
 			}
+		case "esc", "backspace":
+			m.screen = screenSettings
+			m.cursor = 0
+			return m, nil
 		case "enter":
-			if len(m.selected) > 0 {
-				var device string
-				for idx := range m.selected {
-					device = m.choices[idx]
-					break
-				}
+			idx := m.selected
+			if idx == -1 {
+				idx = m.cursor
+			}
+
+			if idx >= 0 && idx < len(m.choices) {
+				device := m.choices[idx]
 
 				if device != "" {
 					// Query native camera resolution
@@ -101,9 +151,7 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.videoWidth = maxWidth
 					m.videoHeight = int(float64(maxWidth) / aspectRatio)
 
-					fps := 30
-
-					session, err := video.NewSession(device, m.videoWidth, m.videoHeight, fps)
+					session, err := video.NewSession(device, m.videoWidth, m.videoHeight, m.fps)
 					if err != nil {
 						m.err = err
 						return m, nil
@@ -114,6 +162,7 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.backBuffer = make([]byte, m.videoWidth*m.videoHeight*3)
 					m.screen = screenCamera
 
+					m.cursor = 0
 					return m, readFrameCmd(m.videoSession, m.backBuffer)
 				}
 			}
