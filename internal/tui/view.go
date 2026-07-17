@@ -74,7 +74,10 @@ func (m Model) viewSelect() tea.View {
 }
 
 func (m Model) viewCamera() tea.View {
-	s := titleStyle.Render("--- Camera Screen ---") + "\n\n"
+	var s string
+	if !m.hideUI {
+		s = titleStyle.Render("--- Camera Screen ---") + "\n\n"
+	}
 
 	// Load the image from the path
 	img, err := loadImage("internal/ascii/test.png")
@@ -85,10 +88,47 @@ func (m Model) viewCamera() tea.View {
 		return v
 	}
 
-	targetWidth := m.termWidth - 4
+	// Get the dimensions of the image
+	bounds := img.Bounds()
+	imgWidth := bounds.Dx()
+	imgHeight := bounds.Dy()
 
+	targetWidth := m.termWidth - 4
 	if targetWidth <= 0 {
 		targetWidth = 80
+	}
+
+	// Calculate the maximum height for the ASCII art based on the terminal height
+	var reservedHeight int
+	if !m.hideUI {
+		reservedHeight = 6
+	} else {
+		reservedHeight = 0
+	}
+	maxHeight := m.termHeight - reservedHeight
+	if maxHeight <= 0 {
+		maxHeight = 10
+	}
+
+	if imgWidth > 0 && imgHeight > 0 {
+		// Calculate the maximum width that will keep the height within our maxHeight limit
+		aspectRatio := float64(imgWidth) / float64(imgHeight)
+		vFitWidth := int(float64(maxHeight) * aspectRatio / 0.45)
+
+		// If fitting vertically requires a smaller width, scale down targetWidth
+		if vFitWidth < targetWidth {
+			targetWidth = vFitWidth
+		}
+
+		if targetWidth >= imgWidth {
+			targetWidth = imgWidth - 1
+		}
+		if targetWidth >= imgHeight {
+			targetWidth = imgHeight - 1
+		}
+		if targetWidth <= 0 {
+			targetWidth = 1
+		}
 	}
 
 	// Pass the loaded image object into the ASCII converter
@@ -100,7 +140,10 @@ func (m Model) viewCamera() tea.View {
 	centeredAscii := lipgloss.PlaceHorizontal(m.termWidth, lipgloss.Center, asciiArt)
 
 	s += centeredAscii
-	s += "\n" + mutedStyle.Render("Press ESC to go back, or q to quit.") + "\n"
+	if !m.hideUI {
+		s += "\n" + mutedStyle.Render("Press h to hide UI.") + "\n"
+		s += "\n" + mutedStyle.Render("Press ESC to go back, or q to quit.") + "\n"
+	}
 
 	v := tea.NewView(s)
 	v.AltScreen = true

@@ -19,6 +19,7 @@ type Model struct {
 	cursor     int
 	selected   map[int]struct{}
 	loading    bool
+	hideUI     bool
 	err        error
 	screen     screenState
 	termWidth  int
@@ -33,6 +34,7 @@ func InitialModel() Model {
 	return Model{
 		selected: make(map[int]struct{}),
 		loading:  true,
+		hideUI:   false,
 	}
 }
 

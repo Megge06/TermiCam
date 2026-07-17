@@ -80,6 +80,8 @@ func (m Model) updateCamera(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "esc", "backspace":
 			m.screen = screenSelect
+		case "h":
+			m.hideUI = !m.hideUI
 		}
 	}
 	return m, nil
