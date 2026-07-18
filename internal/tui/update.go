@@ -215,7 +215,7 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.videoWidth = maxWidth
 					m.videoHeight = int(float64(maxWidth) / aspectRatio)
 
-					session, err := video.NewSession(device, m.videoWidth, m.videoHeight, m.fps)
+					session, err := video.NewSession(device, nativeW, nativeH, m.videoWidth, m.videoHeight, m.fps)
 					if err != nil {
 						m.err = err
 						return m, nil

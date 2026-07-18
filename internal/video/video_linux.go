@@ -66,7 +66,7 @@ func GetDeviceResolution(device Device) (int, int, error) {
 	return w, h, nil
 }
 
-func NewSession(device Device, width, height, fps int) (*Session, error) {
+func NewSession(device Device, _, _, width, height, fps int) (*Session, error) {
 	if device.ID == "" {
 		return nil, fmt.Errorf("empty video device id")
 	}

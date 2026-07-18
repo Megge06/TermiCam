@@ -62,7 +62,7 @@ func GetDeviceResolution(device Device) (int, int, error) {
 	return 640, 480, parseErr
 }
 
-func NewSession(device Device, width, height, fps int) (*Session, error) {
+func NewSession(device Device, captureWidth, captureHeight, width, height, fps int) (*Session, error) {
 	if device.ID == "" {
 		return nil, fmt.Errorf("empty video device id")
 	}
@@ -74,6 +74,7 @@ func NewSession(device Device, width, height, fps int) (*Session, error) {
 		"-fflags", "nobuffer",
 		"-flags", "low_delay",
 		"-f", "avfoundation",
+		"-video_size", fmt.Sprintf("%dx%d", captureWidth, captureHeight),
 		"-framerate", fmt.Sprintf("%d", fps),
 		"-i", fmt.Sprintf("%s:none", device.ID),
 		"-vf", fmt.Sprintf("scale=%d:%d", width, height),
@@ -123,6 +124,7 @@ func parseAVFoundationDevices(output string) []Device {
 
 func parseAVFoundationResolution(output string) (int, int, error) {
 	dimensions := regexp.MustCompile(`^(\d+)x(\d+)(?:\s|$)`)
+	fallbackW, fallbackH := 0, 0
 
 	for _, line := range strings.Split(output, "\n") {
 		if !strings.Contains(line, "Video:") {
@@ -138,9 +140,20 @@ func parseAVFoundationResolution(output string) (int, int, error) {
 			w, _ := strconv.Atoi(matches[1])
 			h, _ := strconv.Atoi(matches[2])
 			if w > 0 && h > 0 {
-				return w, h, nil
+				if fallbackW == 0 || fallbackH == 0 {
+					fallbackW, fallbackH = w, h
+				}
+				if w >= h {
+					return w, h, nil
+				}
 			}
 		}
+	}
+	if fallbackW > 0 && fallbackH > 0 {
+		if fallbackH > fallbackW {
+			return fallbackH, fallbackW, nil
+		}
+		return fallbackW, fallbackH, nil
 	}
 
 	return 640, 480, fmt.Errorf("could not parse resolution from avfoundation output")
