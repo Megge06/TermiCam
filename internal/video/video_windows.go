@@ -85,7 +85,7 @@ func NewSession(device Device, captureWidth, captureHeight, width, height, fps i
 }
 
 func parseDirectShowDevices(output string) []Device {
-	deviceLine := regexp.MustCompile(`^\s*"(.+)"\s*$`)
+	deviceLine := regexp.MustCompile(`"([^"]+)"`)
 	altLine := regexp.MustCompile(`Alternative name\s+"(.+)"`)
 	devices := make([]Device, 0)
 	inVideoDevices := false
@@ -101,26 +101,31 @@ func parseDirectShowDevices(output string) []Device {
 
 	for _, line := range strings.Split(output, "\n") {
 		trimmed := strings.TrimSpace(stripFFmpegPrefix(line))
+		if trimmed == "" {
+			continue
+		}
+
 		if strings.Contains(trimmed, "DirectShow video devices") {
 			flushPending()
 			inVideoDevices = true
 			continue
 		}
-
 		if strings.Contains(trimmed, "DirectShow audio devices") {
 			flushPending()
 			inVideoDevices = false
 			continue
 		}
 
-		if !inVideoDevices {
-			continue
-		}
+		isExplicitVideo := strings.Contains(trimmed, "(video)")
+		isExplicitAudio := strings.Contains(trimmed, "(audio)")
 
-		if matches := deviceLine.FindStringSubmatch(trimmed); len(matches) >= 2 {
+		if matches := deviceLine.FindStringSubmatch(trimmed); len(matches) >= 2 && !strings.Contains(trimmed, "Alternative name") {
 			flushPending()
-			name := strings.TrimSpace(matches[1])
-			pending = &Device{ID: name, Name: name}
+
+			if isExplicitVideo || (inVideoDevices && !isExplicitAudio) {
+				name := strings.TrimSpace(matches[1])
+				pending = &Device{ID: name, Name: name}
+			}
 			continue
 		}
 
