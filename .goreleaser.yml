@@ -40,9 +40,4 @@ release:
   replace_existing_draft: true
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "Merge pull request"
+  use: github-native
