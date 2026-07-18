@@ -8,6 +8,7 @@ import (
 )
 
 // Device identifies a camera as exposed by the host platform.
+
 type Device struct {
 	ID   string
 	Name string
@@ -33,6 +34,7 @@ type Session struct {
 func newSession(width, height int, args []string) (*Session, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// #nosec G204 -- Safe. The args array is constructed entirely inside internal platform-specific files using static system parameters.
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
 
 	stdout, err := cmd.StdoutPipe()

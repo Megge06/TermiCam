@@ -1,7 +1,11 @@
 <img width="523" height="132" alt="TermiCam Ascii Art" src="https://github.com/user-attachments/assets/f97967de-3e74-4d5d-aea6-7d36c93c4d7c" />
 
 # TermiCam
+
 <p align="left">
+  <a href="https://github.com/Megge06/TermiCam/releases">
+    <img src="https://img.shields.io/github/v/release/Megge06/TermiCam?color=a4326b&label=release" alt="Latest Release">
+  </a>
   <a href="https://github.com/Megge06/TermiCam/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-GPLv3-a4326b" alt="License GPLv3">
   </a>
@@ -30,6 +34,47 @@ Platform-specific requirements:
 - **Linux:** install `v4l2-ctl` from `v4l-utils`.
 - **macOS:** grant camera permission to the terminal app you use to run TermiCam.
 - **Windows:** use an FFmpeg build with DirectShow support. Most common Windows FFmpeg builds include this.
+
+---
+
+## Installation
+
+### Pre-compiled Binaries (Recommended)
+
+If you do not have Go installed, you can download a pre-compiled binary for your operating system and architecture directly from the [GitHub Releases](https://github.com/Megge06/TermiCam/releases) page.
+
+#### Linux & macOS
+
+1. Download the archive for your system (e.g., `termicam_Darwin_x86_64.tar.gz` or `termicam_Linux_arm64.tar.gz`).
+2. Extract the archive and make the binary executable:
+
+   ```sh
+   tar -xzf termicam_*.tar.gz
+   chmod +x termicam
+   ```
+
+3. (Optional) Move it to your local path to run it from anywhere:
+   ```sh
+   sudo mv termicam /usr/local/bin/
+   ```
+
+> [!TIP]
+> **macOS Users:** Because the binary is not signed/notarized by Apple, you may see a "Developer Cannot Be Verified" warning on the first run. To allow execution, you can run:
+> `xattr -d com.apple.quarantine termicam`
+
+#### Windows
+
+1. Download the `.zip` archive for your architecture (e.g., `termicam_Windows_x86_64.zip`).
+2. Extract the folder.
+3. Run `termicam.exe` from PowerShell or Command Prompt, or add the folder to your System Environment variables (`PATH`) to run it globally.
+
+### Via Go
+
+If you have Go installed on your machine, you can install TermiCam directly to your `$GOPATH/bin`:
+
+```sh
+go install github.com/Megge06/TermiCam/cmd/termicam@latest
+```
 
 ---
 

@@ -13,7 +13,10 @@ import (
 // Define how the model updates
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyPressMsg); ok {
-		if keyMsg.String() == "ctrl+c" || keyMsg.String() == "q" {
+		// Do not quit on "q" if an input field is active or the list is filtering
+		isTyping := m.inputActive || (m.screen == screenSelect && m.deviceList.FilterState() == list.Filtering)
+
+		if keyMsg.String() == "ctrl+c" || (keyMsg.String() == "q" && !isTyping) {
 			if m.videoSession != nil {
 				_ = m.videoSession.Close()
 			}
@@ -132,6 +135,8 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // Update select screen
 func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
+	wasFiltering := m.deviceList.FilterState() == list.Filtering
+
 	var cmd tea.Cmd
 	m.deviceList, cmd = m.deviceList.Update(msg)
 
@@ -144,7 +149,7 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Prevent custom actions if the user is typing query filters inside the list searchbox
-		if m.deviceList.FilterState() == list.Filtering {
+		if wasFiltering {
 			return m, cmd
 		}
 

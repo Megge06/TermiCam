@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+var videoDeviceRegex = regexp.MustCompile(`^/dev/video\d+$`)
+
 func ListDevices() ([]Device, error) {
 	out, err := exec.Command("v4l2-ctl", "--list-devices").Output()
 	if err != nil {
@@ -46,8 +48,15 @@ func ListDevices() ([]Device, error) {
 }
 
 func GetDeviceResolution(device Device) (int, int, error) {
+	// Sanitize device ID to prevent command injection
+	if !videoDeviceRegex.MatchString(device.ID) {
+		return 640, 480, fmt.Errorf("unsafe device path rejected: %q", device.ID)
+	}
+
+	// #nosec G204 -- Sanitized above using regex validation
 	out, err := exec.Command("v4l2-ctl", "-d", device.ID, "--get-fmt-video").CombinedOutput()
 	if err != nil {
+		// #nosec G204 -- Sanitized above using regex validation
 		out, err = exec.Command("v4l2-ctl", "-d", device.ID, "--get-fmt-video-out").CombinedOutput()
 		if err != nil {
 			return 640, 480, err
@@ -67,8 +76,8 @@ func GetDeviceResolution(device Device) (int, int, error) {
 }
 
 func NewSession(device Device, _, _, width, height, fps int) (*Session, error) {
-	if device.ID == "" {
-		return nil, fmt.Errorf("empty video device id")
+	if !videoDeviceRegex.MatchString(device.ID) {
+		return nil, fmt.Errorf("unsafe device path rejected: %q", device.ID)
 	}
 
 	args := []string{

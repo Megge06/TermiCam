@@ -58,7 +58,7 @@ func (m Model) viewSettings() tea.View {
 			cursor = cursorStyle.Render(">")
 		}
 
-		labelStr := item.label
+		var labelStr string
 		if m.cursor == i {
 			labelStr = currentChoiceStyle.Render(item.label)
 		} else {

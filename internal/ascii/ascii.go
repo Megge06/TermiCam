@@ -60,10 +60,16 @@ func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useCo
 				palette = PaletteDetailed
 			}
 			paletteIndex := int((luminance / 255.0) * float64(len(palette)-1))
+			if paletteIndex >= len(palette) {
+				paletteIndex = len(palette) - 1
+			} else if paletteIndex < 0 {
+				paletteIndex = 0
+			}
+
 			char := palette[paletteIndex]
 
 			if useColor {
-				buf.WriteString(fmt.Sprintf("\x1b[38;2;%d;%d;%dm%c\x1b[0m", r, g, b, char))
+				fmt.Fprintf(&buf, "\x1b[38;2;%d;%d;%dm%c\x1b[0m", r, g, b, char)
 			} else {
 				buf.WriteRune(rune(char))
 			}
@@ -99,5 +105,20 @@ func getBlockAverageRGB24(pix []byte, imgWidth int, startX, startY, endX, endY i
 		return 0, 0, 0
 	}
 
-	return uint8(totalR / count), uint8(totalG / count), uint8(totalB / count)
+	avgR := totalR / count
+	avgG := totalG / count
+	avgB := totalB / count
+
+	// Safeguard clamping to be robust
+	if avgR > 255 {
+		avgR = 255
+	}
+	if avgG > 255 {
+		avgG = 255
+	}
+	if avgB > 255 {
+		avgB = 255
+	}
+
+	return uint8(avgR), uint8(avgG), uint8(avgB)
 }
