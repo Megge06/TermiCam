@@ -123,8 +123,7 @@ func (m Model) viewCamera() tea.View {
 	// Allocate screen layout width
 	var reservedWidth int
 	if !m.hideUI {
-		// Reserve 30 character columns for the HUD sidebar + 8 characters for borders & margins
-		reservedWidth = 38
+		reservedWidth = 40
 	} else {
 		reservedWidth = 4
 	}
@@ -162,6 +161,12 @@ func (m Model) viewCamera() tea.View {
 		if targetWidth <= 0 {
 			targetWidth = 1
 		}
+	}
+
+	// Calculate the exact height of the ASCII artwork using the same formula as ascii.ConvertRGB24ToASCII
+	targetHeight := int(float64(targetWidth*imgHeight/imgWidth) * 0.45)
+	if targetHeight <= 0 {
+		targetHeight = 1
 	}
 
 	// Pass the loaded frame into the raw RGB24 converter
@@ -203,8 +208,10 @@ func (m Model) viewCamera() tea.View {
 		fmt.Sprintf("Palette:    %s", badgeStyle.Render(detailMode)),
 		"",
 		mutedStyle.Render("Terminal Scale:"),
-		mutedStyle.Render(fmt.Sprintf("%dx%d", m.termWidth, m.termHeight)),
+		mutedStyle.Render(fmt.Sprintf("%dx%d", targetWidth, targetHeight)),
 		"",
+		mutedStyle.Render("Terminal Window:"),
+		mutedStyle.Render(fmt.Sprintf("%dx%d", m.termWidth, m.termHeight)),
 		titleStyle.Render("--- KEYMAP ---"),
 		mutedStyle.Render("[h]      Toggle HUD"),
 		mutedStyle.Render("[Space]  Toggle Options"),
