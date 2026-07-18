@@ -20,7 +20,8 @@ builds:
     main: ./cmd/termicam
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -29,8 +30,8 @@ archives:
 
     format_overrides:
       - goos: windows
-        format: zip
-
+        formats:
+          - zip
 checksum:
   name_template: "checksums.txt"
 
