@@ -110,11 +110,8 @@ func (m Model) viewSelect() tea.View {
 }
 
 func (m Model) viewCamera() tea.View {
-	var s string
-
 	if m.videoSession == nil || len(m.frameBuffer) == 0 {
-		s += errStyle.Render("Camera session is not initialized.")
-		v := tea.NewView(s)
+		v := tea.NewView(errStyle.Render("Camera session is not initialized."))
 		v.AltScreen = true
 		return v
 	}
@@ -123,7 +120,16 @@ func (m Model) viewCamera() tea.View {
 	imgWidth := m.videoWidth
 	imgHeight := m.videoHeight
 
-	targetWidth := m.termWidth - 4
+	// Allocate screen layout width
+	var reservedWidth int
+	if !m.hideUI {
+		// Reserve 30 character columns for the HUD sidebar + 8 characters for borders & margins
+		reservedWidth = 38
+	} else {
+		reservedWidth = 4
+	}
+
+	targetWidth := m.termWidth - reservedWidth
 	if targetWidth <= 0 {
 		targetWidth = 80
 	}
@@ -131,9 +137,9 @@ func (m Model) viewCamera() tea.View {
 	// Calculate the maximum height for the ASCII art based on the terminal height
 	var reservedHeight int
 	if !m.hideUI {
-		reservedHeight = 9
+		reservedHeight = 4
 	} else {
-		reservedHeight = 0
+		reservedHeight = 2
 	}
 	maxHeight := m.termHeight - reservedHeight
 	if maxHeight <= 0 {
@@ -157,52 +163,64 @@ func (m Model) viewCamera() tea.View {
 			targetWidth = 1
 		}
 	}
+
 	// Pass the loaded frame into the raw RGB24 converter
 	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.detailed)
 	if err != nil {
-		s += errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
+		asciiArt = errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
 
-	// Render Header and Meta Badges
-	if !m.hideUI {
-		headerText := titleStyle.Render("--- Camera Screen ---")
-
-		// Visual status badges indicating session information
-		fpsBadge := badgeStyle.Render(fmt.Sprintf(" %d FPS ", m.fps))
-
-		var colorMode string
-		if m.color {
-			colorMode = " COLOR "
-		} else {
-			colorMode = " B&W "
-		}
-		colorBadge := badgeStyle.Render(colorMode)
-
-		var detailMode string
-		if m.detailed {
-			detailMode = " DETAILED "
-		} else {
-			detailMode = " SIMPLE "
-		}
-		detailBadge := badgeStyle.Render(detailMode)
-
-		badges := lipgloss.JoinHorizontal(lipgloss.Center, fpsBadge, " ", colorBadge, " ", detailBadge)
-
-		s = lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, headerText) + "\n"
-		s += lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, badges) + "\n\n"
+	// If UI is hidden, render raw centered ASCII stream directly
+	if m.hideUI {
+		centeredRaw := lipgloss.Place(m.termWidth, m.termHeight, lipgloss.Center, lipgloss.Center, asciiArt)
+		v := tea.NewView(centeredRaw)
+		v.AltScreen = true
+		return v
 	}
 
-	// Centered ASCII Art
-	centeredAscii := lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, asciiArt)
-	s += centeredAscii
-
-	// Render Footer
-	if !m.hideUI {
-		s += "\n\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("[h] Hide UI"))
-		s += "\n" + lipgloss.PlaceHorizontal(m.termWidth-2, lipgloss.Center, mutedStyle.Render("[Space] Toggle/Cycle  [Enter] Proceed  [ESC] Go Back [q] Quit"))
+	// Render dynamic sidebar content using active settings
+	var colorMode string
+	if m.color {
+		colorMode = "COLOR"
+	} else {
+		colorMode = "B&W"
 	}
 
-	v := tea.NewView(s)
+	var detailMode string
+	if m.detailed {
+		detailMode = "DETAILED"
+	} else {
+		detailMode = "SIMPLE"
+	}
+
+	hudContent := lipgloss.JoinVertical(
+		lipgloss.Left,
+		titleStyle.Render("MONITOR HUD"),
+		"",
+		fmt.Sprintf("Resolution: %dx%d", m.videoWidth, m.videoHeight),
+		fmt.Sprintf("Target FPS: %s", badgeStyle.Render(fmt.Sprintf(" %d ", m.fps))),
+		fmt.Sprintf("Color Mode: %s", badgeStyle.Render(colorMode)),
+		fmt.Sprintf("Palette:    %s", badgeStyle.Render(detailMode)),
+		"",
+		mutedStyle.Render("Terminal Scale:"),
+		mutedStyle.Render(fmt.Sprintf("%dx%d", m.termWidth, m.termHeight)),
+		"",
+		titleStyle.Render("--- KEYMAP ---"),
+		mutedStyle.Render("[h]      Toggle HUD"),
+		mutedStyle.Render("[Space]  Toggle Options"),
+		mutedStyle.Render("[ESC]    Go Back"),
+		mutedStyle.Render("[q]      Exit Program"),
+	)
+
+	// Combine the viewfinder monitor box and the HUD side-panel horizontally
+	monitor := monitorStyle.Render(asciiArt)
+	sidebar := hudStyle.Render(hudContent)
+	compositeView := lipgloss.JoinHorizontal(lipgloss.Top, monitor, "   ", sidebar)
+
+	// Center-align the entire structured panel in the active terminal window
+	centeredComposite := lipgloss.Place(m.termWidth, m.termHeight, lipgloss.Center, lipgloss.Center, compositeView)
+
+	v := tea.NewView(centeredComposite)
 	v.AltScreen = true
 	return v
 }

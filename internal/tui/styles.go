@@ -42,6 +42,17 @@ var (
 			Background(darkMagenta).
 			Padding(0, 1).
 			Bold(true)
+
+	monitorStyle = lipgloss.NewStyle().
+			Border(lipgloss.DoubleBorder()).
+			BorderForeground(magenta).
+			Padding(0, 1)
+
+	hudStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(cyan).
+			Padding(1, 2).
+			Width(30)
 )
 
 // ASCII art wordmark, shown atop the settings and device-selection screens
