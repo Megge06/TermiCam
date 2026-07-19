@@ -36,7 +36,8 @@ type Model struct {
 	fps          int
 	textInput    textinput.Model
 	inputActive  bool
-	deviceList   list.Model // <-- NEW FIELD
+	deviceList   list.Model
+	mirror       bool
 }
 
 // Frame capture message types

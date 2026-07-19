@@ -12,7 +12,7 @@ const (
 )
 
 // ConvertRGB24ToASCII handles the conversion of an RGB24 image to ASCII art
-func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, detailed bool) (string, error) {
+func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, detailed bool, mirror bool) (string, error) {
 	if imgWidth <= 0 || imgHeight <= 0 || targetWidth <= 0 {
 		return "", fmt.Errorf("invalid dimensions: imgWidth=%d, imgHeight=%d, targetWidth=%d", imgWidth, imgHeight, targetWidth)
 	}
@@ -29,9 +29,14 @@ func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useCo
 	// Go through each character block
 	for y := 0; y < targetHeight; y++ {
 		for x := 0; x < targetWidth; x++ {
-			startX := int(float64(x) * float64(imgWidth) / float64(targetWidth))
+			sampleX := x
+			if mirror {
+				sampleX = targetWidth - 1 - x
+			}
+
+			startX := int(float64(sampleX) * float64(imgWidth) / float64(targetWidth))
 			startY := int(float64(y) * float64(imgHeight) / float64(targetHeight))
-			endX := int(float64(x+1) * float64(imgWidth) / float64(targetWidth))
+			endX := int(float64(sampleX+1) * float64(imgWidth) / float64(targetWidth))
 			endY := int(float64(y+1) * float64(imgHeight) / float64(targetHeight))
 
 			// Safety boundary checks

@@ -43,6 +43,9 @@ Platform-specific requirements:
 
 If you do not have Go installed, you can download a pre-compiled binary for your operating system and architecture directly from the [GitHub Releases](https://github.com/Megge06/TermiCam/releases) page.
 
+> [!WARNING]
+> FFmpeg is still needed when running the binaries, it is not compiled into the binaries.
+
 #### Linux & macOS
 
 1. Download the archive for your system (e.g., `termicam_Darwin_x86_64.tar.gz` or `termicam_Linux_arm64.tar.gz`).

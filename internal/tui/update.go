@@ -101,8 +101,8 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down", "j":
-			// There are 4 items (0: Color, 1: Detailed, 2: FPS, 3: Proceed)
-			if m.cursor < 3 {
+			// There are 5 items (0: Color, 1: Detailed, 2: Mirror, 3: FPS, 4: Proceed)
+			if m.cursor < 4 {
 				m.cursor++
 			}
 		case "space", "left", "right":
@@ -112,12 +112,14 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case 1:
 				m.detailed = !m.detailed
 			case 2:
+				m.mirror = !m.mirror
+			case 3:
 				// Activate input on Space
 				m.inputActive = true
 				m.textInput.Focus()
 				m.textInput.SetValue(strconv.Itoa(m.fps))
 				return m, textinput.Blink
-			case 3:
+			case 4:
 				m.screen = screenSelect
 				m.cursor = 0
 				return m, nil

@@ -48,6 +48,7 @@ func (m Model) viewSettings() tea.View {
 	}{
 		{"Color Mode", true, m.color, ""},
 		{"Detailed Palette", true, m.detailed, ""},
+		{"Mirror Image", true, m.mirror, ""},
 		{"Target FPS", false, false, fpsVal},
 		{"Proceed to Device Selection", false, false, ""},
 	}
@@ -170,7 +171,7 @@ func (m Model) viewCamera() tea.View {
 	}
 
 	// Pass the loaded frame into the raw RGB24 converter
-	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.detailed)
+	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.detailed, m.mirror)
 	if err != nil {
 		asciiArt = errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
