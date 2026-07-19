@@ -19,6 +19,8 @@ A real-time ASCII camera for your terminal.
 
 TermiCam is a Go TUI application that reads camera frames through FFmpeg and renders them as ASCII art in your terminal. It supports Linux, macOS, and Windows camera capture through platform-specific FFmpeg backends.
 
+TermiCam supports both real and virtual camera inputs.
+
 <img width="720" height="406" alt="Demonstration of TermiCam converting a live video feed into real-time ASCII art inside a terminal window" src="https://github.com/user-attachments/assets/e921eebd-24bd-4027-b8dd-75b086ec8039" />
 
 ---
@@ -205,6 +207,20 @@ The app starts on a settings screen. Configure the display options, proceed to d
 
 ---
 
+## Using as a Virtual Camera (OBS Studio)
+
+If you want to use your live ASCII feed as a system webcam for video calls or other things, you can easily route TermiCam's output through **OBS Studio** without installing custom virtual camera drivers:
+
+1. **Start TermiCam:** Run the application in your preferred terminal emulator.
+2. **Open OBS Studio:** Download and launch [OBS Studio](https://obsproject.com/).
+3. **Add a Capture Source:** Under the **Sources** panel, click the `+` button and add Window Capture.
+4. **Select your Terminal:** Configure the source to target your open terminal window running TermiCam.
+5. **Crop the Window Borders:** Adjust the size of the window in the preview to fill it completely with the output from TermiCam.
+6. **Start the Virtual Camera:** Click **Start Virtual Camera** under the _Controls_ panel in the bottom-right of OBS.
+7. **Select OBS as your Input:** In your video application, change your input device to **OBS Virtual Camera**.
+
+---
+
 ## Keyboard Shortcuts
 
 ### Settings Screen
@@ -232,10 +248,10 @@ The app starts on a settings screen. Configure the display options, proceed to d
 
 ## Development Commands
 
-Run package checks:
+Run linting:
 
 ```sh
-go test ./...
+golangci-lint run
 ```
 
 Format Go files:

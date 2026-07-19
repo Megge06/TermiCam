@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"charm.land/bubbles/v2/list" // <-- NEW IMPORT
+	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/Megge06/TermiCam/internal/video"
@@ -76,6 +76,7 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				val := strings.TrimSpace(m.textInput.Value())
 				if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
 					m.fps = parsed
+					m.persistCurrentSettings()
 				} else {
 					// Fallback if the entered value is invalid
 					m.textInput.SetValue(strconv.Itoa(m.fps))
@@ -109,10 +110,13 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.cursor {
 			case 0:
 				m.color = !m.color
+				m.persistCurrentSettings()
 			case 1:
 				m.detailed = !m.detailed
+				m.persistCurrentSettings()
 			case 2:
 				m.mirror = !m.mirror
+				m.persistCurrentSettings()
 			case 3:
 				// Activate input on Space
 				m.inputActive = true
@@ -120,12 +124,14 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue(strconv.Itoa(m.fps))
 				return m, textinput.Blink
 			case 4:
+				m.persistCurrentSettings()
 				m.screen = screenSelect
 				m.cursor = 0
 				return m, nil
 			}
 
 		case "enter":
+			m.persistCurrentSettings()
 			m.screen = screenSelect
 			m.cursor = 0
 			return m, nil
@@ -283,4 +289,15 @@ func readFrameCmd(s *video.Session, buf []byte) tea.Cmd {
 		}
 		return frameMsg{}
 	}
+}
+
+// persistCurrentSettings saves the current settings to disk
+func (m Model) persistCurrentSettings() {
+	settings := PersistedSettings{
+		Color:    m.color,
+		Detailed: m.detailed,
+		Mirror:   m.mirror,
+		FPS:      m.fps,
+	}
+	_ = SaveSettings(settings)
 }

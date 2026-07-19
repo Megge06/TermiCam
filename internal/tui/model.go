@@ -99,6 +99,8 @@ func (m *Model) updateListItems() {
 
 // Empty initial model, filled with data upon command completion
 func InitialModel() Model {
+	saved := LoadSettings()
+
 	ti := textinput.New()
 	ti.Placeholder = "30"
 	ti.SetValue("30")
@@ -118,12 +120,13 @@ func InitialModel() Model {
 		selected:    -1,
 		loading:     true,
 		hideUI:      false,
-		color:       false,
-		detailed:    false,
-		fps:         30,
+		color:       saved.Color,
+		detailed:    saved.Detailed,
+		mirror:      saved.Mirror,
+		fps:         saved.FPS,
 		textInput:   ti,
 		inputActive: false,
-		deviceList:  l, // <-- NEW ASSIGNMENT
+		deviceList:  l,
 	}
 }
 
