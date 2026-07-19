@@ -1,14 +1,18 @@
 package tui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/Megge06/TermiCam/internal/video"
 )
+
+type playbackTickMsg struct{}
 
 // Define how the model updates
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -20,12 +24,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.videoSession != nil {
 				_ = m.videoSession.Close()
 			}
+			m.stopRecording()
+			m.closePlayback()
 			return m, tea.Quit
 		}
 	}
 
 	// Handle window size changes
 	switch msg := msg.(type) {
+	// In case of playing back a recording
+	case playbackTickMsg:
+		if m.playbackMode {
+			if err := m.readNextPlaybackFrame(); err != nil {
+				m.err = err
+				m.closePlayback()
+				return m, nil
+			}
+			return m, playbackTickCmd(m.fps)
+		}
+
 	case tea.WindowSizeMsg:
 		m.termWidth = msg.Width
 		m.termHeight = msg.Height
@@ -253,6 +270,14 @@ func (m Model) updateCamera(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case frameMsg:
 		m.frameBuffer, m.backBuffer = m.backBuffer, m.frameBuffer
+		// Reads recorded frame if a recording is played
+		if m.recording && m.recordGzip != nil {
+			_, err := m.recordGzip.Write(m.frameBuffer)
+			if err != nil {
+				m.err = fmt.Errorf("failed to write recorded frame: %w", err)
+				m.stopRecording()
+			}
+		}
 		// Fetch the next frame into the back buffer
 		return m, readFrameCmd(m.videoSession, m.backBuffer)
 
@@ -267,13 +292,29 @@ func (m Model) updateCamera(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc", "backspace":
+			if m.playbackMode {
+				m.closePlayback()
+				return m, tea.Quit
+			}
 			if m.videoSession != nil {
 				_ = m.videoSession.Close()
 				m.videoSession = nil
 			}
+			m.stopRecording()
 			m.screen = screenSelect
 		case "h":
 			m.hideUI = !m.hideUI
+		case "r":
+			if !m.playbackMode {
+				if m.recording {
+					m.stopRecording()
+				} else {
+					filename := fmt.Sprintf("rec_%s.tcam", time.Now().Format("2006-01-02_15-04-05"))
+					if err := m.startRecording(filename); err != nil {
+						m.err = err
+					}
+				}
+			}
 		}
 	}
 	return m, nil
@@ -289,6 +330,16 @@ func readFrameCmd(s *video.Session, buf []byte) tea.Cmd {
 		}
 		return frameMsg{}
 	}
+}
+
+// Paces playback to privded fps
+func playbackTickCmd(fps int) tea.Cmd {
+	if fps <= 0 {
+		fps = 30
+	}
+	return tea.Tick(time.Second/time.Duration(fps), func(t time.Time) tea.Msg {
+		return playbackTickMsg{}
+	})
 }
 
 // persistCurrentSettings saves the current settings to disk

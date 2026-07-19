@@ -19,7 +19,7 @@ A real-time ASCII camera for your terminal.
 
 TermiCam is a Go TUI application that reads camera frames through FFmpeg and renders them as ASCII art in your terminal. It supports Linux, macOS, and Windows camera capture through platform-specific FFmpeg backends.
 
-TermiCam supports both real and virtual camera inputs.
+TermiCam supports both real and virtual camera inputs, as well as lightweight session recording and playback.
 
 <img width="720" height="406" alt="Demonstration of TermiCam converting a live video feed into real-time ASCII art inside a terminal window" src="https://github.com/user-attachments/assets/e921eebd-24bd-4027-b8dd-75b086ec8039" />
 
@@ -197,6 +197,8 @@ TermiCam uses FFmpeg's DirectShow input on Windows. If no camera appears, check 
 
 ## Usage
 
+### Live Mode
+
 Start the app:
 
 ```sh
@@ -204,6 +206,16 @@ go run ./cmd/termicam
 ```
 
 The app starts on a settings screen. Configure the display options, proceed to device selection, choose a camera, and press Enter to start the ASCII camera view.
+
+### Playback Mode
+
+You can play back previously recorded `.tcam` video sessions directly from the command line:
+
+```sh
+go run ./cmd/termicam path/to/recording.tcam
+```
+
+This launches TermiCam directly in a lightweight streaming viewer that loops the file infinitely. Press **Esc** or **q** to close the program.
 
 ---
 
@@ -241,7 +253,8 @@ If you want to use your live ASCII feed as a system webcam for video calls or ot
 ### Camera View
 
 - **`h`:** Toggle the HUD sidebar on and off for a minimal, full-screen ASCII display.
-- **Esc / Backspace:** Stop the session and return to the Device Selection screen.
+- **`r`:** Toggle recording on/off (only available in live mode).
+- **Esc / Backspace:** Stop the active session and return to the Device Selection screen (or exit immediately if in Playback Mode).
 - **`q` / Ctrl+C:** Terminate the application immediately.
 
 ---

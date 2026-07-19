@@ -43,6 +43,11 @@ var (
 			Padding(0, 1).
 			Bold(true)
 
+	recordingStyle = lipgloss.NewStyle().
+			Border(lipgloss.DoubleBorder()).
+			BorderForeground(errorRed).
+			Padding(0, 1)
+
 	monitorStyle = lipgloss.NewStyle().
 			Border(lipgloss.DoubleBorder()).
 			BorderForeground(magenta).

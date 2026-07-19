@@ -111,7 +111,7 @@ func (m Model) viewSelect() tea.View {
 }
 
 func (m Model) viewCamera() tea.View {
-	if m.videoSession == nil || len(m.frameBuffer) == 0 {
+	if (m.videoSession == nil && !m.playbackMode) || len(m.frameBuffer) == 0 {
 		v := tea.NewView(errStyle.Render("Camera session is not initialized."))
 		v.AltScreen = true
 		return v
@@ -199,10 +199,26 @@ func (m Model) viewCamera() tea.View {
 		detailMode = "SIMPLE"
 	}
 
+	// Change recording/playback status
+	var statusStr string
+	if m.playbackMode {
+		statusStr = badgeStyle.Render(" PLAYBACK ")
+	} else if m.recording {
+		statusStr = errStyle.Render(" RECORDING ")
+	} else {
+		statusStr = badgeStyle.Render(" LIVE ")
+	}
+
+	var recKeymap string
+	if !m.playbackMode {
+		recKeymap = mutedStyle.Render("[r]      Toggle Record\n")
+	}
+
 	hudContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		titleStyle.Render("MONITOR HUD"),
 		"",
+		fmt.Sprintf("Status:     %s", statusStr),
 		fmt.Sprintf("Resolution: %dx%d", m.videoWidth, m.videoHeight),
 		fmt.Sprintf("Target FPS: %s", badgeStyle.Render(fmt.Sprintf(" %d ", m.fps))),
 		fmt.Sprintf("Color Mode: %s", badgeStyle.Render(colorMode)),
@@ -215,13 +231,18 @@ func (m Model) viewCamera() tea.View {
 		mutedStyle.Render(fmt.Sprintf("%dx%d", m.termWidth, m.termHeight)),
 		titleStyle.Render("--- KEYMAP ---"),
 		mutedStyle.Render("[h]      Toggle HUD"),
-		mutedStyle.Render("[Space]  Toggle Options"),
-		mutedStyle.Render("[ESC]    Go Back"),
+		recKeymap+
+			mutedStyle.Render("[ESC]    Go Back"),
 		mutedStyle.Render("[q]      Exit Program"),
 	)
 
 	// Combine the viewfinder monitor box and the HUD side-panel horizontally
-	monitor := monitorStyle.Render(asciiArt)
+	var monitor string
+	if m.recording {
+		monitor = recordingStyle.Render(asciiArt)
+	} else {
+		monitor = monitorStyle.Render(asciiArt)
+	}
 	sidebar := hudStyle.Render(hudContent)
 	compositeView := lipgloss.JoinHorizontal(lipgloss.Top, monitor, "   ", sidebar)
 
