@@ -21,7 +21,7 @@ TermiCam is a Go TUI application that reads camera frames through FFmpeg and ren
 
 TermiCam supports both real and virtual camera inputs, as well as lightweight session recording and playback.
 
-<img width="720" height="406" alt="Demonstration of TermiCam converting a live video feed into real-time ASCII art inside a terminal window" src="https://github.com/user-attachments/assets/e921eebd-24bd-4027-b8dd-75b086ec8039" />
+<img width="600" height="377" alt="Demonstration GIF" src="https://github.com/user-attachments/assets/d0660ea8-4ce9-4a10-ad69-5e6ef702bbc4" />
 
 ---
 
@@ -46,7 +46,7 @@ Platform-specific requirements:
 If you do not have Go installed, you can download a pre-compiled binary for your operating system and architecture directly from the [GitHub Releases](https://github.com/Megge06/TermiCam/releases) page.
 
 > [!WARNING]
-> FFmpeg is still needed when running the binaries, it is not compiled into the binaries.
+> `FFmpeg` and `v4l2-ctl` is still needed when running the binaries, it is not compiled into the binaries.
 
 #### Linux & macOS
 
