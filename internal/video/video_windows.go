@@ -59,9 +59,45 @@ func GetDeviceResolution(device Device) (int, int, error) {
 	return 640, 480, parseErr
 }
 
-func NewSession(device Device, captureWidth, captureHeight, width, height, fps int) (*Session, error) {
+func GetDeviceFramerate(device Device, captureWidth, captureHeight, targetFPS int) (float64, error) {
+	if device.ID == "" {
+		return 30, fmt.Errorf("empty video device id")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	out, err := exec.CommandContext(
+		ctx,
+		"ffmpeg",
+		"-hide_banner",
+		"-nostdin",
+		"-f", "dshow",
+		"-list_options", "true",
+		"-i", "video="+device.ID,
+	).CombinedOutput()
+
+	modes := parseDirectShowModes(string(out))
+	if fps := chooseCaptureFramerate(targetFPS, captureWidth, captureHeight, modes); fps > 0 {
+		return fps, nil
+	}
+
+	if ctx.Err() != nil {
+		return 30, fmt.Errorf("failed to probe dshow framerate: %w", ctx.Err())
+	}
+	if err != nil {
+		return 30, fmt.Errorf("failed to probe dshow framerate: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	return 30, fmt.Errorf("could not parse framerate from dshow output")
+}
+
+func NewSession(device Device, captureWidth, captureHeight, width, height, fps int, captureFPS float64) (*Session, error) {
 	if device.ID == "" {
 		return nil, fmt.Errorf("empty video device id")
+	}
+	if captureFPS <= 0 {
+		captureFPS = 30
 	}
 
 	args := []string{
@@ -72,7 +108,7 @@ func NewSession(device Device, captureWidth, captureHeight, width, height, fps i
 		"-flags", "low_delay",
 		"-f", "dshow",
 		"-video_size", fmt.Sprintf("%dx%d", captureWidth, captureHeight),
-		"-framerate", fmt.Sprintf("%d", fps),
+		"-framerate", formatFramerate(captureFPS),
 		"-i", "video=" + device.ID,
 		"-vf", fmt.Sprintf("scale=%d:%d", width, height),
 		"-r", fmt.Sprintf("%d", fps),
@@ -166,6 +202,26 @@ func parseDirectShowResolution(output string) (int, int, error) {
 	}
 
 	return 640, 480, fmt.Errorf("could not parse resolution from dshow output")
+}
+
+func parseDirectShowModes(output string) []captureMode {
+	modeSpec := regexp.MustCompile(`s=(\d+)x(\d+)\s+fps=([0-9]+(?:\.[0-9]+)?)`)
+	modes := make([]captureMode, 0)
+
+	for _, matches := range modeSpec.FindAllStringSubmatch(output, -1) {
+		if len(matches) < 4 {
+			continue
+		}
+
+		w, _ := strconv.Atoi(matches[1])
+		h, _ := strconv.Atoi(matches[2])
+		fps, err := strconv.ParseFloat(matches[3], 64)
+		if w > 0 && h > 0 && err == nil && fps > 0 {
+			modes = append(modes, captureMode{width: w, height: h, framerates: []float64{fps}})
+		}
+	}
+
+	return modes
 }
 
 func stripFFmpegPrefix(line string) string {

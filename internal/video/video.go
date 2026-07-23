@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os/exec"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 // Device identifies a camera as exposed by the host platform.
@@ -26,9 +30,99 @@ func (d Device) String() string {
 type Session struct {
 	cmd    *exec.Cmd
 	stdout io.ReadCloser
+	stderr *stderrBuffer
 	cancel context.CancelFunc
 	width  int
 	height int
+}
+
+type stderrBuffer struct {
+	mu    sync.Mutex
+	data  []byte
+	limit int
+}
+
+func newStderrBuffer(limit int) *stderrBuffer {
+	return &stderrBuffer{limit: limit}
+}
+
+func (b *stderrBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.limit <= 0 {
+		return len(p), nil
+	}
+	if len(p) >= b.limit {
+		b.data = append(b.data[:0], p[len(p)-b.limit:]...)
+		return len(p), nil
+	}
+
+	b.data = append(b.data, p...)
+	if overflow := len(b.data) - b.limit; overflow > 0 {
+		copy(b.data, b.data[overflow:])
+		b.data = b.data[:b.limit]
+	}
+
+	return len(p), nil
+}
+
+func (b *stderrBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return strings.TrimSpace(string(b.data))
+}
+
+type captureMode struct {
+	width      int
+	height     int
+	framerates []float64
+}
+
+func chooseCaptureFramerate(targetFPS, width, height int, modes []captureMode) float64 {
+	candidates := make([]float64, 0)
+	for _, mode := range modes {
+		if mode.width == width && mode.height == height {
+			candidates = append(candidates, mode.framerates...)
+		}
+	}
+
+	if len(candidates) == 0 {
+		for _, mode := range modes {
+			candidates = append(candidates, mode.framerates...)
+		}
+	}
+
+	return chooseNearestFramerate(targetFPS, candidates)
+}
+
+func chooseNearestFramerate(targetFPS int, candidates []float64) float64 {
+	if targetFPS <= 0 {
+		targetFPS = 30
+	}
+
+	target := float64(targetFPS)
+	best := 0.0
+	bestDiff := math.MaxFloat64
+
+	for _, candidate := range candidates {
+		if candidate <= 0 {
+			continue
+		}
+
+		diff := math.Abs(candidate - target)
+		if best == 0 || diff < bestDiff || (diff == bestDiff && candidate > best) {
+			best = candidate
+			bestDiff = diff
+		}
+	}
+
+	return best
+}
+
+func formatFramerate(fps float64) string {
+	return strconv.FormatFloat(fps, 'f', -1, 64)
 }
 
 func newSession(width, height int, args []string) (*Session, error) {
@@ -36,6 +130,8 @@ func newSession(width, height int, args []string) (*Session, error) {
 
 	// #nosec G204 -- Safe. The args array is constructed entirely inside internal platform-specific files using static system parameters.
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+	stderr := newStderrBuffer(8192)
+	cmd.Stderr = stderr
 
 	stdout, err := cmd.StdoutPipe()
 
@@ -52,6 +148,7 @@ func newSession(width, height int, args []string) (*Session, error) {
 	return &Session{
 		cmd:    cmd,
 		stdout: stdout,
+		stderr: stderr,
 		cancel: cancel,
 		width:  width,
 		height: height,
@@ -66,6 +163,14 @@ func (s *Session) ReadFrame(dest []byte) error {
 	}
 
 	_, err := io.ReadFull(s.stdout, dest[:expectedSize])
+	if err == nil {
+		return nil
+	}
+
+	if stderr := s.stderr.String(); stderr != "" {
+		return fmt.Errorf("failed to read ffmpeg frame: %w: %s", err, stderr)
+	}
+
 	return err
 }
 

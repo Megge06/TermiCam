@@ -75,7 +75,15 @@ func GetDeviceResolution(device Device) (int, int, error) {
 	return w, h, nil
 }
 
-func NewSession(device Device, _, _, width, height, fps int) (*Session, error) {
+func GetDeviceFramerate(device Device, _, _, _ int) (float64, error) {
+	if !videoDeviceRegex.MatchString(device.ID) {
+		return 0, fmt.Errorf("unsafe device path rejected: %q", device.ID)
+	}
+
+	return 0, nil
+}
+
+func NewSession(device Device, _, _, width, height, fps int, _ float64) (*Session, error) {
 	if !videoDeviceRegex.MatchString(device.ID) {
 		return nil, fmt.Errorf("unsafe device path rejected: %q", device.ID)
 	}

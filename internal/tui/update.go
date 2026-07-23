@@ -244,8 +244,12 @@ func (m Model) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Scale height proportionally to maintain exact aspect ratio
 					m.videoWidth = maxWidth
 					m.videoHeight = int(float64(maxWidth) / aspectRatio)
+					captureFPS, err := video.GetDeviceFramerate(device, nativeW, nativeH, m.fps)
+					if err != nil || captureFPS <= 0 {
+						captureFPS = 30
+					}
 
-					session, err := video.NewSession(device, nativeW, nativeH, m.videoWidth, m.videoHeight, m.fps)
+					session, err := video.NewSession(device, nativeW, nativeH, m.videoWidth, m.videoHeight, m.fps, captureFPS)
 					if err != nil {
 						m.err = err
 						return m, nil
