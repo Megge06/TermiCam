@@ -90,19 +90,27 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch keyMsg.String() {
 			case "enter":
 				// Confirm the change
-				val := strings.TrimSpace(m.textInput.Value())
-				if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
-					m.fps = parsed
-					m.persistCurrentSettings()
-				} else {
-					// Fallback if the entered value is invalid
-					m.textInput.SetValue(strconv.Itoa(m.fps))
+				switch m.cursor {
+				case 2:
+					val := m.textInput.Value()
+					if val != "" {
+						m.customPalette = val
+						m.persistCurrentSettings()
+					}
+				case 4:
+					val := strings.TrimSpace(m.textInput.Value())
+					if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
+						m.fps = parsed
+						m.persistCurrentSettings()
+					} else {
+						// Fallback if the entered value is invalid
+						m.textInput.SetValue(strconv.Itoa(m.fps))
+					}
 				}
 				m.textInput.Blur()
 				m.inputActive = false
 			case "esc":
 				// Revert changes and exit edit mode
-				m.textInput.SetValue(strconv.Itoa(m.fps))
 				m.textInput.Blur()
 				m.inputActive = false
 			}
@@ -119,8 +127,8 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down", "j":
-			// There are 5 items (0: Color, 1: Detailed, 2: Mirror, 3: FPS, 4: Proceed)
-			if m.cursor < 4 {
+			// There are 6 items (0: Color, 1: Palette Mode, 2: Palette, 3: Mirror, 4: FPS, 5: Proceed)
+			if m.cursor < 5 {
 				m.cursor++
 			}
 		case "space", "left", "right":
@@ -129,18 +137,47 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.color = !m.color
 				m.persistCurrentSettings()
 			case 1:
-				m.detailed = !m.detailed
+				if msg.String() == "left" {
+					switch m.paletteMode {
+					case "detailed":
+						m.paletteMode = "default"
+					case "custom":
+						m.paletteMode = "detailed"
+					default:
+						m.paletteMode = "custom"
+					}
+				} else {
+					switch m.paletteMode {
+					case "default":
+						m.paletteMode = "detailed"
+					case "detailed":
+						m.paletteMode = "custom"
+					default:
+						m.paletteMode = "default"
+					}
+				}
 				m.persistCurrentSettings()
 			case 2:
+				if m.paletteMode == "custom" {
+					m.inputActive = true
+					m.textInput.CharLimit = 100
+					m.textInput.SetWidth(40)
+					m.textInput.SetValue(m.customPalette)
+					m.textInput.Focus()
+					return m, textinput.Blink
+				}
+			case 3:
 				m.mirror = !m.mirror
 				m.persistCurrentSettings()
-			case 3:
+			case 4:
 				// Activate input on Space
 				m.inputActive = true
-				m.textInput.Focus()
+				m.textInput.CharLimit = 3
+				m.textInput.SetWidth(5)
 				m.textInput.SetValue(strconv.Itoa(m.fps))
+				m.textInput.Focus()
 				return m, textinput.Blink
-			case 4:
+			case 5:
 				m.persistCurrentSettings()
 				m.screen = screenSelect
 				m.cursor = 0
@@ -349,10 +386,11 @@ func playbackTickCmd(fps int) tea.Cmd {
 // persistCurrentSettings saves the current settings to disk
 func (m Model) persistCurrentSettings() {
 	settings := PersistedSettings{
-		Color:    m.color,
-		Detailed: m.detailed,
-		Mirror:   m.mirror,
-		FPS:      m.fps,
+		Color:         m.color,
+		PaletteMode:   m.paletteMode,
+		CustomPalette: m.customPalette,
+		Mirror:        m.mirror,
+		FPS:           m.fps,
 	}
 	_ = SaveSettings(settings)
 }

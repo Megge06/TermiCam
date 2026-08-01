@@ -4,23 +4,27 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/Megge06/TermiCam/internal/ascii"
 )
 
 // PersistedSettings mirrors the configurable fields in model.go
 type PersistedSettings struct {
-	Color    bool `json:"color"`
-	Detailed bool `json:"detailed"`
-	Mirror   bool `json:"mirror"`
-	FPS      int  `json:"fps"`
+	Color         bool   `json:"color"`
+	PaletteMode   string `json:"palette_mode"`
+	CustomPalette string `json:"custom_palette"`
+	Mirror        bool   `json:"mirror"`
+	FPS           int    `json:"fps"`
 }
 
 // DefaultSettings returns the fallback settings if no config file exists.
 func DefaultSettings() PersistedSettings {
 	return PersistedSettings{
-		Color:    false,
-		Detailed: false,
-		Mirror:   false,
-		FPS:      30,
+		Color:         false,
+		PaletteMode:   "default",
+		CustomPalette: ascii.PaletteSimple,
+		Mirror:        false,
+		FPS:           30,
 	}
 }
 
@@ -53,6 +57,13 @@ func LoadSettings() PersistedSettings {
 	var saved PersistedSettings
 	if err := json.Unmarshal(data, &saved); err != nil {
 		return defaults
+	}
+
+	if saved.PaletteMode == "" {
+		saved.PaletteMode = defaults.PaletteMode
+	}
+	if saved.CustomPalette == "" {
+		saved.CustomPalette = defaults.CustomPalette
 	}
 
 	// Simple validation for FPS to ensure it isn't invalid or zero

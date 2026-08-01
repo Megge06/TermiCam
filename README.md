@@ -205,7 +205,7 @@ Start the app:
 go run ./cmd/termicam
 ```
 
-The app starts on a settings screen. Configure the display options, proceed to device selection, choose a camera, and press Enter to start the ASCII camera view.
+The app starts on a settings screen. Configure display options (color mode, palette mode—Default, Detailed, or Custom—mirroring, and FPS), proceed to device selection, choose a camera, and press Enter to start the ASCII camera view.
 
 ### Playback Mode
 
@@ -238,9 +238,9 @@ If you want to use your live ASCII feed as a system webcam for video calls or ot
 ### Settings Screen
 
 - **Up / Down (`j` / `k`):** Move between configuration items.
-- **Space / Left / Right:** Toggle settings or activate the Target FPS input field.
-- **Enter:** Save settings and proceed to device selection.
-- **Esc (while editing FPS):** Cancel editing and restore previous value.
+- **Space / Left / Right:** Toggle settings, cycle Palette Mode (**Default** / **Detailed** / **Custom**), or edit the **Custom Palette** / **Target FPS** fields.
+- **Enter:** Save settings and proceed to device selection (or confirm active input editing).
+- **Esc (while editing):** Cancel text input editing and restore previous value.
 
 ### Device Selection
 
@@ -321,7 +321,7 @@ ffmpeg -hide_banner -f dshow -list_devices true -i dummy
 
 ### Slow Rendering
 
-Try lowering the target FPS in the settings screen or use a smaller terminal window. TermiCam caps capture scaling to reduce CPU load, but color output and detailed palettes can still be heavier in large terminals.
+Try lowering the target FPS in the settings screen or use a smaller terminal window. TermiCam caps capture scaling to reduce CPU load, but color output and detailed/custom palettes can still be heavier in large terminals.
 
 ---
 

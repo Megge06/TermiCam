@@ -12,7 +12,7 @@ const (
 )
 
 // ConvertRGB24ToASCII handles the conversion of an RGB24 image to ASCII art
-func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, detailed bool, mirror bool) (string, error) {
+func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, palette string, mirror bool) (string, error) {
 	if imgWidth <= 0 || imgHeight <= 0 || targetWidth <= 0 {
 		return "", fmt.Errorf("invalid dimensions: imgWidth=%d, imgHeight=%d, targetWidth=%d", imgWidth, imgHeight, targetWidth)
 	}
@@ -22,6 +22,12 @@ func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useCo
 
 	if targetHeight <= 0 {
 		targetHeight = 1
+	}
+
+	// Convert palette string to rune slice once to safely handle multi-byte Unicode characters
+	runes := []rune(palette)
+	if len(runes) == 0 {
+		runes = []rune(PaletteSimple)
 	}
 
 	var buf bytes.Buffer
@@ -60,23 +66,19 @@ func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useCo
 			luminance := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
 
 			// Map the 8-bit luminance (0-255) to our palette index
-			palette := PaletteSimple
-			if detailed {
-				palette = PaletteDetailed
-			}
-			paletteIndex := int((luminance / 255.0) * float64(len(palette)-1))
-			if paletteIndex >= len(palette) {
-				paletteIndex = len(palette) - 1
+			paletteIndex := int((luminance / 255.0) * float64(len(runes)-1))
+			if paletteIndex >= len(runes) {
+				paletteIndex = len(runes) - 1
 			} else if paletteIndex < 0 {
 				paletteIndex = 0
 			}
 
-			char := palette[paletteIndex]
+			char := runes[paletteIndex]
 
 			if useColor {
 				fmt.Fprintf(&buf, "\x1b[38;2;%d;%d;%dm%c\x1b[0m", r, g, b, char)
 			} else {
-				buf.WriteRune(rune(char))
+				buf.WriteRune(char)
 			}
 		}
 		if y < targetHeight-1 {

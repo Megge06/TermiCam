@@ -10,6 +10,7 @@ import (
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"github.com/Megge06/TermiCam/internal/ascii"
 	"github.com/Megge06/TermiCam/internal/video"
 )
 
@@ -22,34 +23,35 @@ const (
 )
 
 type Model struct {
-	choices      []string
-	devices      []video.Device
-	cursor       int
-	selected     int
-	loading      bool
-	hideUI       bool
-	err          error
-	screen       screenState
-	termWidth    int
-	termHeight   int
-	videoSession *video.Session
-	frameBuffer  []byte
-	backBuffer   []byte
-	videoWidth   int
-	videoHeight  int
-	color        bool
-	detailed     bool
-	fps          int
-	textInput    textinput.Model
-	inputActive  bool
-	deviceList   list.Model
-	mirror       bool
-	recording    bool
-	recordFile   *os.File
-	recordGzip   *gzip.Writer
-	playbackMode bool
-	playbackFile *os.File
-	playbackGzip *gzip.Reader
+	choices       []string
+	devices       []video.Device
+	cursor        int
+	selected      int
+	loading       bool
+	hideUI        bool
+	err           error
+	screen        screenState
+	termWidth     int
+	termHeight    int
+	videoSession  *video.Session
+	frameBuffer   []byte
+	backBuffer    []byte
+	videoWidth    int
+	videoHeight   int
+	color         bool
+	paletteMode   string
+	customPalette string
+	fps           int
+	textInput     textinput.Model
+	inputActive   bool
+	deviceList    list.Model
+	mirror        bool
+	recording     bool
+	recordFile    *os.File
+	recordGzip    *gzip.Writer
+	playbackMode  bool
+	playbackFile  *os.File
+	playbackGzip  *gzip.Reader
 }
 
 // Frame capture message types
@@ -119,7 +121,6 @@ func InitialModel() Model {
 	ti.CharLimit = 3
 	ti.SetWidth(5)
 
-	// Configure and initialize the default list delegate using your existing tui color scheme
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Foreground(magenta).BorderLeftForeground(magenta)
 	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Foreground(gray).BorderLeftForeground(magenta)
@@ -128,17 +129,18 @@ func InitialModel() Model {
 	l.Title = "Select video devices to configure"
 	l.SetShowHelp(false)
 	m := Model{
-		selected:    -1,
-		loading:     true,
-		hideUI:      false,
-		color:       saved.Color,
-		detailed:    saved.Detailed,
-		mirror:      saved.Mirror,
-		fps:         saved.FPS,
-		textInput:   ti,
-		inputActive: false,
-		deviceList:  l,
-		recording:   false,
+		selected:      -1,
+		loading:       true,
+		hideUI:        false,
+		color:         saved.Color,
+		paletteMode:   saved.PaletteMode,
+		customPalette: saved.CustomPalette,
+		mirror:        saved.Mirror,
+		fps:           saved.FPS,
+		textInput:     ti,
+		inputActive:   false,
+		deviceList:    l,
+		recording:     false,
 	}
 
 	// Detect if file is being given as argument
@@ -169,6 +171,20 @@ func getDevicesCmd() tea.Msg {
 	}
 
 	return devicesLoadedMsg(devices)
+}
+
+func (m Model) getPalette() string {
+	switch m.paletteMode {
+	case "detailed":
+		return ascii.PaletteDetailed
+	case "custom":
+		if m.customPalette != "" {
+			return m.customPalette
+		}
+		return ascii.PaletteSimple
+	default:
+		return ascii.PaletteSimple
+	}
 }
 
 // Put atop recorded file to identify metadata
@@ -212,7 +228,7 @@ func (m *Model) startRecording(path string) error {
 		Height:   int32(m.videoHeight), // #nosec G115 -- Safe. Dimensions are small terminal resolutions
 		FPS:      int32(m.fps),         // #nosec G115 -- Safe. Target FPS is validated and low
 		Color:    boolToByte(m.color),
-		Detailed: boolToByte(m.detailed),
+		Detailed: boolToByte(m.paletteMode == "detailed"),
 		Mirror:   boolToByte(m.mirror),
 	}
 
@@ -273,7 +289,11 @@ func (m *Model) loadRecording(path string) error {
 	m.videoHeight = int(header.Height)
 	m.fps = int(header.FPS)
 	m.color = byteToBool(header.Color)
-	m.detailed = byteToBool(header.Detailed)
+	if byteToBool(header.Detailed) {
+		m.paletteMode = "detailed"
+	} else {
+		m.paletteMode = "default"
+	}
 	m.mirror = byteToBool(header.Mirror)
 	m.playbackMode = true
 

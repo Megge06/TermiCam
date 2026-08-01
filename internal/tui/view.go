@@ -36,21 +36,40 @@ func (m Model) viewSettings() tea.View {
 	s += titleStyle.Render("--- Settings ---") + "\n\n"
 
 	fpsVal := fmt.Sprintf("%d", m.fps)
-	if m.inputActive {
+	if m.inputActive && m.cursor == 4 {
 		fpsVal = m.textInput.View()
 	}
 
+	paletteVal := m.getPalette()
+	if m.paletteMode == "custom" {
+		if m.inputActive && m.cursor == 2 {
+			paletteVal = m.textInput.View()
+		} else {
+			paletteVal = m.customPalette
+		}
+	}
+
+	type settingType int
+	const (
+		typeToggle settingType = iota
+		typePaletteMode
+		typePaletteVal
+		typeValue
+		typeAction
+	)
+
 	settings := []struct {
 		label     string
-		isToggle  bool
+		sType     settingType
 		toggleVal bool
 		value     string
 	}{
-		{"Color Mode", true, m.color, ""},
-		{"Detailed Palette", true, m.detailed, ""},
-		{"Mirror Image", true, m.mirror, ""},
-		{"Target FPS", false, false, fpsVal},
-		{"Proceed to Device Selection", false, false, ""},
+		{"Color Mode", typeToggle, m.color, ""},
+		{"Palette Mode", typePaletteMode, false, ""},
+		{"Palette", typePaletteVal, false, paletteVal},
+		{"Mirror Image", typeToggle, m.mirror, ""},
+		{"Target FPS", typeValue, false, fpsVal},
+		{"Proceed to Device Selection", typeAction, false, ""},
 	}
 
 	for i, item := range settings {
@@ -66,19 +85,28 @@ func (m Model) viewSettings() tea.View {
 			labelStr = choiceStyle.Render(item.label)
 		}
 
-		if item.isToggle {
+		switch item.sType {
+		case typeToggle:
 			s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, renderToggle(item.toggleVal))
-		} else if item.value != "" {
+		case typePaletteMode:
+			s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, renderPaletteMode(m.paletteMode))
+		case typePaletteVal:
+			if m.paletteMode == "custom" {
+				s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, checkedStyle.Render(item.value))
+			} else {
+				s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, mutedStyle.Render(item.value))
+			}
+		case typeValue:
 			s += fmt.Sprintf("%s %s: %s\n", cursor, labelStr, checkedStyle.Render(item.value))
-		} else {
+		case typeAction:
 			s += fmt.Sprintf("%s %s\n", cursor, labelStr)
 		}
 	}
 
 	if m.inputActive {
-		s += mutedStyle.Render("[Enter] Confirm FPS  [ESC] Cancel Editing")
+		s += mutedStyle.Render("[Enter] Confirm  [ESC] Cancel Editing")
 	} else {
-		s += mutedStyle.Render("[Space] Edit [Enter] Proceed  [q] Quit")
+		s += mutedStyle.Render("[Space] Edit/Toggle [Enter] Proceed  [q] Quit")
 	}
 
 	v := tea.NewView(s)
@@ -171,7 +199,7 @@ func (m Model) viewCamera() tea.View {
 	}
 
 	// Pass the loaded frame into the raw RGB24 converter
-	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.detailed, m.mirror)
+	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.getPalette(), m.mirror)
 	if err != nil {
 		asciiArt = errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
@@ -193,10 +221,13 @@ func (m Model) viewCamera() tea.View {
 	}
 
 	var detailMode string
-	if m.detailed {
+	switch m.paletteMode {
+	case "detailed":
 		detailMode = "DETAILED"
-	} else {
-		detailMode = "SIMPLE"
+	case "custom":
+		detailMode = "CUSTOM"
+	default:
+		detailMode = "DEFAULT"
 	}
 
 	// Change recording/playback status
@@ -261,4 +292,21 @@ func renderToggle(enabled bool) string {
 	}
 	activeMuted := activeToggleStyle.Background(gray).Foreground(fg)
 	return inactiveToggleStyle.Render(" ON ") + activeMuted.Render(" OFF ")
+}
+
+// renderPaletteMode draws the active/inactive visual palette
+func renderPaletteMode(mode string) string {
+	d := inactiveToggleStyle.Render(" DEFAULT ")
+	det := inactiveToggleStyle.Render(" DETAILED ")
+	c := inactiveToggleStyle.Render(" CUSTOM ")
+
+	switch mode {
+	case "detailed":
+		det = activeToggleStyle.Render(" DETAILED ")
+	case "custom":
+		c = activeToggleStyle.Render(" CUSTOM ")
+	default:
+		d = activeToggleStyle.Render(" DEFAULT ")
+	}
+	return d + " " + det + " " + c
 }
