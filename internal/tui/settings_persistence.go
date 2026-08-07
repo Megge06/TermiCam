@@ -15,7 +15,7 @@ type PersistedSettings struct {
 	CustomPalette string  `json:"custom_palette"`
 	Mirror        bool    `json:"mirror"`
 	FPS           int     `json:"fps"`
-	Ratio         float64 `json:ratio`
+	Ratio         float64 `json:"ratio"`
 }
 
 // DefaultSettings returns the fallback settings if no config file exists.
