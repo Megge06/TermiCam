@@ -180,10 +180,15 @@ func (m Model) viewCamera() tea.View {
 		maxHeight = 10
 	}
 
+	safeRatio := m.ratio
+	if safeRatio <= 0 {
+		safeRatio = 0.45
+	}
+
 	if imgWidth > 0 && imgHeight > 0 {
 		// Calculate the maximum width that will keep the height within the maxHeight limit
 		aspectRatio := float64(imgWidth) / float64(imgHeight)
-		vFitWidth := int(float64(maxHeight) * aspectRatio / 0.45)
+		vFitWidth := int(float64(maxHeight) * aspectRatio / safeRatio)
 
 		// If fitting vertically requires a smaller width, scale down targetWidth
 		if vFitWidth < targetWidth {
@@ -199,7 +204,7 @@ func (m Model) viewCamera() tea.View {
 	}
 
 	// Calculate the exact height of the ASCII artwork using the same formula as ascii.ConvertRGB24ToASCII
-	targetHeight := int(float64(targetWidth*imgHeight/imgWidth) * 0.45)
+	targetHeight := int(float64(targetWidth*imgHeight/imgWidth) * safeRatio)
 	if targetHeight <= 0 {
 		targetHeight = 1
 	}
