@@ -10,11 +10,12 @@ import (
 
 // PersistedSettings mirrors the configurable fields in model.go
 type PersistedSettings struct {
-	Color         bool   `json:"color"`
-	PaletteMode   string `json:"palette_mode"`
-	CustomPalette string `json:"custom_palette"`
-	Mirror        bool   `json:"mirror"`
-	FPS           int    `json:"fps"`
+	Color         bool    `json:"color"`
+	PaletteMode   string  `json:"palette_mode"`
+	CustomPalette string  `json:"custom_palette"`
+	Mirror        bool    `json:"mirror"`
+	FPS           int     `json:"fps"`
+	Ratio         float64 `json:ratio`
 }
 
 // DefaultSettings returns the fallback settings if no config file exists.
@@ -25,6 +26,7 @@ func DefaultSettings() PersistedSettings {
 		CustomPalette: ascii.PaletteSimple,
 		Mirror:        false,
 		FPS:           30,
+		Ratio:         0.45,
 	}
 }
 
@@ -69,6 +71,10 @@ func LoadSettings() PersistedSettings {
 	// Simple validation for FPS to ensure it isn't invalid or zero
 	if saved.FPS <= 0 {
 		saved.FPS = defaults.FPS
+	}
+
+	if saved.Ratio <= 0 {
+		saved.Ratio = defaults.Ratio
 	}
 
 	return saved

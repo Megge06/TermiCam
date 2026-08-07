@@ -12,13 +12,13 @@ const (
 )
 
 // ConvertRGB24ToASCII handles the conversion of an RGB24 image to ASCII art
-func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, palette string, mirror bool) (string, error) {
+func ConvertRGB24ToASCII(pix []byte, imgWidth, imgHeight, targetWidth int, useColor bool, palette string, mirror bool, ratio float64) (string, error) {
 	if imgWidth <= 0 || imgHeight <= 0 || targetWidth <= 0 {
 		return "", fmt.Errorf("invalid dimensions: imgWidth=%d, imgHeight=%d, targetWidth=%d", imgWidth, imgHeight, targetWidth)
 	}
 
 	rawHeight := targetWidth * imgHeight / imgWidth
-	targetHeight := int(float64(rawHeight) * 0.45)
+	targetHeight := int(float64(rawHeight) * ratio)
 
 	if targetHeight <= 0 {
 		targetHeight = 1

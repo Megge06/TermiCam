@@ -52,6 +52,7 @@ type Model struct {
 	playbackMode  bool
 	playbackFile  *os.File
 	playbackGzip  *gzip.Reader
+	ratio         float64
 }
 
 // Frame capture message types
@@ -141,6 +142,7 @@ func InitialModel() Model {
 		inputActive:   false,
 		deviceList:    l,
 		recording:     false,
+		ratio:         saved.Ratio,
 	}
 
 	// Detect if file is being given as argument

@@ -106,6 +106,15 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Fallback if the entered value is invalid
 						m.textInput.SetValue(strconv.Itoa(m.fps))
 					}
+				case 5:
+					val := strings.TrimSpace(m.textInput.Value())
+					if parsed, err := strconv.ParseFloat(val, 64); err == nil && parsed > 0 {
+						m.ratio = parsed
+						m.persistCurrentSettings()
+					} else {
+						// Fallback if the entered value is invalid
+						m.textInput.SetValue(fmt.Sprintf("%.2f", m.ratio))
+					}
 				}
 				m.textInput.Blur()
 				m.inputActive = false
@@ -127,8 +136,8 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down", "j":
-			// There are 6 items (0: Color, 1: Palette Mode, 2: Palette, 3: Mirror, 4: FPS, 5: Proceed)
-			if m.cursor < 5 {
+			// There are 6 items (0: Color, 1: Palette Mode, 2: Palette, 3: Mirror, 4: FPS, 5: Aspect Ratio, 6: Proceed)
+			if m.cursor < 6 {
 				m.cursor++
 			}
 		case "space", "left", "right":
@@ -178,6 +187,13 @@ func (m Model) updateSettings(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				return m, textinput.Blink
 			case 5:
+				m.inputActive = true
+				m.textInput.CharLimit = 6
+				m.textInput.SetWidth(6)
+				m.textInput.SetValue(fmt.Sprintf("%.2f", m.ratio))
+				m.textInput.Focus()
+				return m, textinput.Blink
+			case 6:
 				m.persistCurrentSettings()
 				m.screen = screenSelect
 				m.cursor = 0
@@ -391,6 +407,7 @@ func (m Model) persistCurrentSettings() {
 		CustomPalette: m.customPalette,
 		Mirror:        m.mirror,
 		FPS:           m.fps,
+		Ratio:         m.ratio,
 	}
 	_ = SaveSettings(settings)
 }

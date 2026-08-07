@@ -9,7 +9,7 @@
   <a href="https://github.com/Megge06/TermiCam/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-GPLv3-a4326b" alt="License GPLv3">
   </a>
-  <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white" alt="Go Version">
+  <img src="https://img.shields.io/badge/Go-1.26.5-00ADD8?logo=go&logoColor=white" alt="Go Version">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-00f5d4?logo=gnubash&logoColor=black" alt="Platforms Supported">
   <img src="https://img.shields.io/badge/dependency-FFmpeg-FF007F?logo=ffmpeg&logoColor=white" alt="FFmpeg Required">
   </a>
@@ -238,7 +238,7 @@ If you want to use your live ASCII feed as a system webcam for video calls or ot
 ### Settings Screen
 
 - **Up / Down (`j` / `k`):** Move between configuration items.
-- **Space / Left / Right:** Toggle settings, cycle Palette Mode (**Default** / **Detailed** / **Custom**), or edit the **Custom Palette** / **Target FPS** fields.
+- **Space / Left / Right:** Toggle settings.
 - **Enter:** Save settings and proceed to device selection (or confirm active input editing).
 - **Esc (while editing):** Cancel text input editing and restore previous value.
 
@@ -336,7 +336,7 @@ Try lowering the target FPS in the settings screen or use a smaller terminal win
 
 ## Built With
 
-- **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** - A powerful little TUI framework, used to power TermiCam's interface.
+- **[Bubble Tea](https://github.com/charmbracelet/wbubbletea)** - A powerful little TUI framework, used to power TermiCam's interface.
 - **[Lip Gloss](https://github.com/charmbracelet/lipgloss)** - Style definitions for nice terminal layouts, used for styling and rendering in the TUI.
 - **[FFmpeg](https://github.com/ffmpeg/ffmpeg)** - A complete, cross-platform solution to record, convert and stream audio and video, used for getting a stream of the camera video.
 

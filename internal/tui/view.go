@@ -40,6 +40,11 @@ func (m Model) viewSettings() tea.View {
 		fpsVal = m.textInput.View()
 	}
 
+	ratioVal := fmt.Sprintf("%.2f", m.ratio)
+	if m.inputActive && m.cursor == 5 {
+		ratioVal = m.textInput.View()
+	}
+
 	paletteVal := m.getPalette()
 	if m.paletteMode == "custom" {
 		if m.inputActive && m.cursor == 2 {
@@ -69,6 +74,7 @@ func (m Model) viewSettings() tea.View {
 		{"Palette", typePaletteVal, false, paletteVal},
 		{"Mirror Image", typeToggle, m.mirror, ""},
 		{"Target FPS", typeValue, false, fpsVal},
+		{"Character Aspect Ratio", typeValue, false, ratioVal},
 		{"Proceed to Device Selection", typeAction, false, ""},
 	}
 
@@ -199,7 +205,7 @@ func (m Model) viewCamera() tea.View {
 	}
 
 	// Pass the loaded frame into the raw RGB24 converter
-	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.getPalette(), m.mirror)
+	asciiArt, err := ascii.ConvertRGB24ToASCII(m.frameBuffer, imgWidth, imgHeight, targetWidth, m.color, m.getPalette(), m.mirror, m.ratio)
 	if err != nil {
 		asciiArt = errStyle.Render(fmt.Sprintf("Error converting image to ASCII: %v", err))
 	}
